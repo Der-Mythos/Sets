@@ -146,7 +146,7 @@
 </head>
 <body>
 <div class="wrap" id="app"></div>
-<script>const SEED = {"players":["Luis","Linus","Gerda","Stina","Johannes","Fabio","Lukas","Bruno","Leo","Gustav","Josef","Toni","Nicolas","Carla","Felix","Leonard","Moritz","Olli","Ayaz","Alessandro"],"charts":{"QB":["Stina","Luis","Gustav","Carla","Lukas"],"C":["Gerda","Fabio","Stina","Nicolas","Leonard"],"X":["Luis","Fabio","Leo","Josef","Olli"],"Y":["Linus","Lukas","Bruno","Toni","Felix","Ayaz"],"Z":["Johannes","Bruno","Fabio","Lukas","Moritz","Alessandro"],"WC":["Luis","Bruno","Lukas","Toni","Carla","Alessandro"],"FS":["Johannes","Linus","Lukas","Leo"],"B":["Stina","Bruno","Olli","Felix","Ayaz"],"SS":["Gerda","Johannes","Moritz","Leonard"],"SC":["Gustav","Fabio","Gerda","Nicolas","Josef"]}};</script>
+<script>const SEED = {"players":["Leon-Paul",{"name":"Stefan","side":"defOnly"},{"name":"Emre","side":"offOnly"},{"name":"Carina","side":"defOnly"},{"name":"Ferdi","side":"defOnly"},{"name":"Flo","side":"defOnly"},{"name":"Urbanski","side":"offOnly"},"Shady",{"name":"Justus","side":"def"},{"name":"Leon","side":"off"},{"name":"Marius","side":"offOnly"},{"name":"Modou","side":"defOnly"},"Quirin",{"name":"Robin","side":"offOnly"},{"name":"Sebi","side":"offOnly"},{"name":"Bürger","side":"off"},{"name":"Till","side":"off"},{"name":"Terzi","side":"offOnly"}],"charts":{"QB":["Robin","Marius","Justus","Emre","Till"],"C":["Sebi","Urbanski"],"Z":["Till"],"B":["Modou"],"SS":["Justus","Stefan","Leon-Paul","Flo"]},"formats":[{"id":"fmwtcfdzxdz","name":"5v5 (Postion based)","slots":["X","Y","C","QB","Z","SC","SS","B","FS","WC"],"pairs":{"5":0,"6":1,"7":3,"8":2,"9":4}},{"id":"fmwtcge24608","name":"5v5 (Best-on-Best)","slots":["X","Y","C","QB","Z","SC","SS","B","FS","WC"]},{"id":"fmwtdjzs142w","name":"2v2 (+QB/Blitz)","slots":["QB","O","O","B","D","D"],"pairs":{"3":0}},{"id":"fmwtdkchy7jh","name":"2v2","slots":["O","O","D","D"]}],"formatId":"fmwtcge24608"};</script>
 <script>
 // Set Lists core: pure functions (strengths, row score, fairness rules, generator).
 // Works as a Node module (tests) and as a plain script inlined into Set-Lists.html (global SetListsCore).
@@ -622,15 +622,21 @@
   function fromSeed(seed) {
     const st = attachSheetView(defaultState());
     const byName = new Map();
-    (seed && seed.players || []).forEach((name, i) => {
+    (seed && seed.players || []).forEach((entry, i) => {
+      /* a seed player is a name, or {name, side} */
+      const name = entry && typeof entry === 'object' ? entry.name : entry;
       const p = { id: 'p' + (i + 1), name: String(name), present: true };
+      if (entry && typeof entry === 'object' && entry.side && entry.side !== 'both') p.side = entry.side;
       st.players.push(p); byName.set(p.name, p.id);
     });
     for (const pos of Object.keys(seed && seed.charts || {})) {
       if (!Core.POSITIONS.includes(pos)) continue;
       st.charts[pos] = seed.charts[pos].map(n => byName.get(n)).filter(Boolean);
     }
-    for (const f of (seed && seed.formats || [])) st.formats.push(f);
+    /* formats in the seed replace the built-in ones */
+    const fs = (seed && seed.formats || []).filter(f => f && typeof f.id === 'string' && validSlots(f.slots) && (f.pairs == null || validPairs(f.slots, f.pairs)));
+    if (fs.length) st.formats = fs.map(f => JSON.parse(JSON.stringify(f)));
+    st.settings.formatId = seed && st.formats.some(f => f.id === seed.formatId) ? seed.formatId : st.formats[0].id;
     return st;
   }
 
