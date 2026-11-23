@@ -138,6 +138,10 @@
   @media (max-width:420px){ .roster{grid-template-columns:repeat(4,1fr)} }
   .cpos{display:block; font-size:.62em; font-weight:800; opacity:.7; line-height:1; margin-bottom:1px; letter-spacing:.02em}
   .pill.wild{border-style:dashed}
+  .pdot{display:inline-block; width:.72em; height:.72em; border-radius:50%; margin-right:.28em; vertical-align:-.04em; background:var(--pc); box-shadow:0 0 0 1.5px #fff}
+  .cell.pc, .pcell.pc{background-image:linear-gradient(var(--pc), var(--pc)); background-repeat:no-repeat; background-size:100% 6px}
+  .pcell.pc{background-size:100% .22em}
+  .posname{margin:0 12px 6px}
 </style>
 </head>
 <body>
@@ -155,7 +159,13 @@
   const GROUP = { O: ['X', 'Y', 'C', 'Z'], D: ['SC', 'SS', 'FS', 'WC'] };
   SIDE.O = 'off'; SIDE.D = 'def';
   const SLOTS = ['X', 'Y', 'C', 'QB', 'Z', 'O', 'SC', 'SS', 'B', 'FS', 'WC', 'D'];   /* everything a format may use, in column order */
-  const LABEL = { O: 'OFF', D: 'DEF' };   /* display names, when one should differ from its key. Offense: X, Y, C receivers, QB, Z receiver; defense: SC strong side corner, SS strong side safety, B blitzer, FS free/weak side safety, WC weak side corner */
+  const LABEL = { O: 'OFF', D: 'DEF' };
+  /* the plays draw the offense routes in colours, not letters */
+  const COLOR = { X: '#e83e8c', Y: '#1e6fd9', C: '#111318', QB: '#8a929e', Z: '#d0312d' };
+  const COLOR_NAME = { X: 'Pink', Y: 'Blau', C: 'Schwarz', QB: 'Grau', Z: 'Rot' };
+  const NAME = { X: 'X-Receiver (Pink)', Y: 'Y-Receiver (Blau)', C: 'C-Receiver (Schwarz)', QB: 'Quarterback (Grau)', Z: 'Z-Receiver (Rot)',
+    SC: 'Strong Side Corner', SS: 'Strong Side Safety', B: 'Blitzer', FS: 'Free Safety / Weak Side Safety', WC: 'Weak Side Corner',
+    O: 'beliebige Offense-Position (X/Y/C/Z)', D: 'beliebige Defense-Position (SC/SS/FS/WC)' };   /* display names, when one should differ from its key. Offense: X, Y, C receivers, QB, Z receiver; defense: SC strong side corner, SS strong side safety, B blitzer, FS free/weak side safety, WC weak side corner */
   const UNTRIED = 2.5;
 
   /* chart filtered to present ids, order kept, unknown ids and duplicates dropped */
@@ -564,7 +574,7 @@
     return n ? sum / n : Infinity;
   }
 
-  const api = { POSITIONS, SLOTS, GROUP, groupFree, rowPositions, SIDE, LABEL, UNTRIED, MAX_ROWS, rowStrength, sideOk, sideMismatch, bestPositions, missedBest, presentOrder, strengthOf, rowScore, markOf,
+  const api = { COLOR, COLOR_NAME, NAME, POSITIONS, SLOTS, GROUP, groupFree, rowPositions, SIDE, LABEL, UNTRIED, MAX_ROWS, rowStrength, sideOk, sideMismatch, bestPositions, missedBest, presentOrder, strengthOf, rowScore, markOf,
     minRows, suggestedRows, repCounts, violations, sheetCost, mulberry32, generate, greedyFill, repairFairness, fairPenalty };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SetListsCore = api;
@@ -893,6 +903,11 @@
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const label = pos => Core.LABEL[pos] || pos;
+  /* label with the route colour dot in front (offense) */
+  const dot = pos => Core.COLOR[pos] ? `<span class="pdot" style="--pc:${Core.COLOR[pos]}"></span>` : '';
+  const plabel = pos => dot(pos) + label(pos);
+  /* colour stripe on a filled offense cell, for the position actually played */
+  const stripe = (pos, id) => id && Core.COLOR[pos] ? { cls: ' pc', style: ` style="--pc:${Core.COLOR[pos]}"` } : { cls: '', style: '' };
   const player = id => ui.state.players.find(p => p.id === id);
   const nameOf = id => { const p = player(id); return p ? p.name : '?'; };
   /* names longer than 8 letters are cut to 7 plus a dot on the sheet table, so 3v2 fits a phone */
@@ -931,7 +946,7 @@
   function chartSection(pos) {
     const ids = ui.state.charts[pos] || [];
     const isOpen = !!ui.open[pos];
-    const head = `<button class="charthead" data-act="chart-open" data-pos="${pos}"><span class="pos">${label(pos)}</span><span class="names">${ids.length ? ids.map(id => esc(nameOf(id))).join(', ') : '<i>leer</i>'}</span><span class="caret">${isOpen ? '▾' : '▸'}</span></button>`;
+    const head = `<button class="charthead" data-act="chart-open" data-pos="${pos}"><span class="pos" title="${esc(Core.NAME[pos] || '')}">${plabel(pos)}</span><span class="names">${ids.length ? ids.map(id => esc(nameOf(id))).join(', ') : '<i>leer</i>'}</span><span class="caret">${isOpen ? '▾' : '▸'}</span></button>`;
     if (!isOpen) return `<div class="chart">${head}</div>`;
     const rows = ids.map((id, i) => {
       const p = player(id);
@@ -941,7 +956,8 @@
     const rest = ui.state.players.filter(p => !ids.includes(p.id));
     const add = rest.length ? `<div class="addrow">${rest.map(p => `<button class="pill" data-act="chart-add" data-pos="${pos}" data-id="${p.id}">+ ${esc(p.name)}</button>`).join('')}</div>` : '';
     const hint = ids.length ? '<p class="note">≡ ziehen zum Sortieren · Name lang drücken zum Umbenennen</p>' : '';
-    return `<div class="chart open">${head}<div class="chartlist" id="chartlist-${pos}">${rows}</div>${hint}${add}</div>`;
+    const full = Core.NAME[pos] ? `<p class="note posname">${plabel(pos)} · ${esc(Core.NAME[pos])}</p>` : '';
+    return `<div class="chart open">${head}${full}<div class="chartlist" id="chartlist-${pos}">${rows}</div>${hint}${add}</div>`;
   }
   function formatSection() {
     const fe = ui.formatEdit;
@@ -950,10 +966,10 @@
     if (!fe) return `${list}<button class="wide" data-act="format-new">+ Format</button>`;
     const off = Core.POSITIONS.filter(p => Core.SIDE[p] === 'off'), def = Core.POSITIONS.filter(p => Core.SIDE[p] === 'def');
     const canAdd = p => Core.GROUP[p] ? fe.slots.filter(x => x === p).length < Core.groupFree(fe, p).length : !fe.slots.includes(p);
-    const btn = p => canAdd(p) ? `<button class="pill${Core.GROUP[p] ? ' wild' : ''}" data-act="format-slot-add" data-pos="${p}">+ ${label(p)}${Core.GROUP[p] ? ' (beliebig)' : ''}</button>` : '';
+    const btn = p => canAdd(p) ? `<button class="pill${Core.GROUP[p] ? ' wild' : ''}" data-act="format-slot-add" data-pos="${p}" title="${esc(Core.NAME[p] || '')}">+ ${plabel(p)}${Core.GROUP[p] ? ' (beliebig)' : ''}</button>` : '';
     return `${list}<div class="card">
       <div class="label">Format bearbeiten</div>
-      <div class="slotline">${fe.slots.length ? fe.slots.map((p, i) => `<button class="pill on" data-act="format-slot-remove" data-i="${i}">${label(p)} ✕</button>`).join('') : '<i>keine Positionen</i>'}</div>
+      <div class="slotline">${fe.slots.length ? fe.slots.map((p, i) => `<button class="pill on" data-act="format-slot-remove" data-i="${i}">${plabel(p)} ✕</button>`).join('') : '<i>keine Positionen</i>'}</div>
       <div class="label">Offense</div><div class="addrow">${off.concat('O').map(btn).join('')}</div>
       <div class="label">Defense</div><div class="addrow">${def.concat('D').map(btn).join('')}</div>
       <p class="note">OFF / DEF (beliebig): Die App teilt pro Set eine passende Position zu. OFF = ${Core.GROUP.O.join('/')}, DEF = ${Core.GROUP.D.join('/')} (ohne QB und Blitzer), im selben Set nie doppelt.</p>
@@ -1026,7 +1042,7 @@
     const head = f.name + ' · ' + ui.state.sheet.rows.length + ' Sets';
     return head + '\n' + ui.state.sheet.rows.map((row, r) => {
       const real = Core.rowPositions(f, row, ctx());
-      const parts = f.slots.map((pos, i) => ({ side: Core.SIDE[pos], txt: label(real[i]) + ' ' + (row[i] ? nameOf(row[i]) : '—') }));
+      const parts = f.slots.map((pos, i) => ({ side: Core.SIDE[pos], txt: label(real[i]) + (Core.COLOR_NAME[real[i]] ? ' (' + Core.COLOR_NAME[real[i]] + ')' : '') + ' ' + (row[i] ? nameOf(row[i]) : '—') }));
       const off = parts.filter(p => p.side === 'off').map(p => p.txt).join(' · ');
       const def = parts.filter(p => p.side === 'def').map(p => p.txt).join(' · ');
       return (r + 1) + ': ' + (off && def ? off + ' | ' + def : off || def);
@@ -1062,18 +1078,19 @@
     ensureSheet();
     const f = format(), c = ctx(), sheet = ui.state.sheet, n = present().length;
     const min = Core.minRows(n, f.slots.length);
-    const head = f.slots.map((pos, i) => `<th class="${Core.SIDE[pos]}${i > 0 && Core.SIDE[pos] === 'def' && Core.SIDE[f.slots[i - 1]] === 'off' ? ' split' : ''}">${label(pos)}</th>`).join('');
+    const head = f.slots.map((pos, i) => `<th class="${Core.SIDE[pos]}${i > 0 && Core.SIDE[pos] === 'def' && Core.SIDE[f.slots[i - 1]] === 'off' ? ' split' : ''}" title="${esc(Core.NAME[pos] || '')}">${plabel(pos)}</th>`).join('');
     const body = sheet.rows.map((row, r) => {
       const sc = Core.rowScore(f, row, c);
       const real = Core.rowPositions(f, row, c);
       const tds = row.map((id, i) => {
         const pos = f.slots[i];
-        const tag = Core.GROUP[pos] && id ? `<small class="cpos">${label(real[i])}</small>` : '';
+        const tag = Core.GROUP[pos] && id ? `<small class="cpos">${plabel(real[i])}</small>` : '';
+        const st = stripe(real[i], id);
         const isSel = ui.sel && ui.sel.row === r && ui.sel.slot === i;
         const untried = id && Core.strengthOf(real[i], id, c).untried;
         const dup = id && row.indexOf(id) !== row.lastIndexOf(id);
         const split = i > 0 && Core.SIDE[pos] === 'def' && Core.SIDE[f.slots[i - 1]] === 'off' ? ' split' : '';
-        return `<td class="${Core.SIDE[pos]}${split}"><button class="cell ${Core.SIDE[pos]}${isSel ? ' sel' : ''}${id ? '' : ' empty'}${untried ? ' untried' : ''}${dup ? ' dup' : ''}" data-act="cell" data-row="${r}" data-slot="${i}" data-id="${id || ''}">${tag}${id ? esc(shortName(id)) : '+'}</button></td>`;
+        return `<td class="${Core.SIDE[pos]}${split}"><button${st.style} class="cell ${Core.SIDE[pos]}${st.cls}${isSel ? ' sel' : ''}${id ? '' : ' empty'}${untried ? ' untried' : ''}${dup ? ' dup' : ''}" data-act="cell" data-row="${r}" data-slot="${i}" data-id="${id || ''}">${tag}${id ? esc(shortName(id)) : '+'}</button></td>`;
       }).join('');
       return `<tr class="setrow"><th class="num sethandle" data-act="drag" data-list="sets" data-i="${r}">${r + 1}<span class="grip">≡</span></th><td><button class="mark ${sc.mark}" data-act="mark" data-row="${r}" aria-label="Balance">●</button></td>${tds}</tr>`;
     }).join('');
@@ -1119,9 +1136,9 @@
     const W = (cols * (longest * 0.62 + 0.9) + 1.8).toFixed(2);
     const H = (rows.length * 1.75 + 3.6).toFixed(2);
     const split = i => i > 0 && Core.SIDE[f.slots[i]] === 'def' && Core.SIDE[f.slots[i - 1]] === 'off' ? ' split' : '';
-    const head = f.slots.map((pos, i) => `<th class="${Core.SIDE[pos]}${split(i)}">${label(pos)}</th>`).join('');
+    const head = f.slots.map((pos, i) => `<th class="${Core.SIDE[pos]}${split(i)}">${plabel(pos)}</th>`).join('');
     const body = rows.map((row, r) => { const real = Core.rowPositions(f, row, ctx()); return `<tr><th class="pnum">${r + 1}</th>${row.map((id, i) =>
-      `<td class="${Core.SIDE[f.slots[i]]}${split(i)}"><span class="pcell ${Core.SIDE[f.slots[i]]}${id ? '' : ' empty'}">${Core.GROUP[f.slots[i]] && id ? `<small class="cpos">${label(real[i])}</small>` : ''}${id ? esc(nameOf(id)) : '–'}</span></td>`).join('')}</tr>`; }).join('');
+      `<td class="${Core.SIDE[f.slots[i]]}${split(i)}"><span${stripe(real[i], id).style} class="pcell ${Core.SIDE[f.slots[i]]}${stripe(real[i], id).cls}${id ? '' : ' empty'}">${Core.GROUP[f.slots[i]] && id ? `<small class="cpos">${plabel(real[i])}</small>` : ''}${id ? esc(nameOf(id)) : '–'}</span></td>`).join('')}</tr>`; }).join('');
     return `<div class="present" style="--rows:${rows.length};--cols:${cols};--fw:${W};--fh:${H}">
       <button class="presentclose" data-act="present-close" aria-label="Schließen">×</button>
       <div class="pinner"><div class="ptitle">${esc(f.name)}</div>
