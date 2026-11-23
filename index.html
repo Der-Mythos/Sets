@@ -901,6 +901,9 @@
   const loaded = State.loadInfo(storage, (typeof SEED !== "undefined" ? SEED : null));
   const ui = { state: loaded.state, broken: loaded.broken, screen: 'team', sel: null, picker: null, open: {}, formatEdit: null };
 
+  /* save capability of the Claude artifact viewer; stays null on a normal website */
+  let claudeDownloads = null;
+  try { if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { claudeDownloads = d; }).catch(() => {}); } catch (e) { /* not in an artifact */ }
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const label = pos => Core.LABEL[pos] || pos;
   /* label with the route colour dot in front (offense) */
@@ -1262,8 +1265,15 @@
       const text = State.exportJSON(ui.state);
       const d = new Date(), pad = n => String(n).padStart(2, '0');
       const name = 'setlists-' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + '.json';
-      /* iOS: the share sheet reaches AirDrop and Files directly; a blob download is the fallback */
-      if (typeof File === 'function' && navigator.share && navigator.canShare) {
+      /* inside a Claude artifact plain downloads are blocked: the viewer's save prompt handles it */
+      if (claudeDownloads) {
+        claudeDownloads.save({ filename: name, data: text }).catch(e => { if (e && e.code !== 'declined') alert('Export nicht möglich (' + (e.code || 'Fehler') + ').'); });
+        return;
+      }
+      /* phones and tablets: the share sheet reaches AirDrop and Files directly; computers get a normal download
+         (on Windows/Chrome the share dialog would open instead of saving the file) */
+      const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      if (touch && typeof File === 'function' && navigator.share && navigator.canShare) {
         try {
           const file = new File([text], name, { type: 'application/json' });
           if (navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'Set Lists' }).catch(() => {}); return; }
