@@ -11,4 +11,5 @@ Statische Web-App (eine `index.html` mit allem drin) für Set-Listen und Depth C
 
 - Positionen intern: X, Y, C, QB, Z (Offense), SC, SS, B, FS, WC (Defense), dazu die Joker OFF (`O`) und DEF (`D`).
 - Alte Speicherstände mit Q, T, $, F werden beim Laden/Import automatisch umbenannt (`migrate`).
+- Teams (Mixed 1–3, Ladies 1) filtern, wer trainiert: `settings.team`, `player.teams` (mehrere möglich).
 - Spielerdaten liegen nur im Browser (localStorage), nicht im Repository. `SEED` in `index.html` sind nur die Startdaten.

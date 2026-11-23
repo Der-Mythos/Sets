@@ -138,6 +138,7 @@
   @media (max-width:420px){ .roster{grid-template-columns:repeat(4,1fr)} }
   .cpos{display:block; font-size:.62em; font-weight:800; opacity:.7; line-height:1; margin-bottom:1px; letter-spacing:.02em}
   .pill.wild{border-style:dashed}
+  .teambar{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 12px}
   .pdot{display:inline-block; width:.72em; height:.72em; border-radius:50%; margin-right:.28em; vertical-align:-.04em; background:var(--pc); box-shadow:0 0 0 1.5px #fff}
   .cell.pc, .pcell.pc{background-image:linear-gradient(var(--pc), var(--pc)); background-repeat:no-repeat; background-size:100% 6px}
   .pcell.pc{background-size:100% .22em}
@@ -604,9 +605,14 @@
     return s;
   }
 
+  /* teams filter who trains today; a player can be in several */
+  const DEFAULT_TEAMS = [{ id: 'm1', name: 'Mixed 1' }, { id: 'm2', name: 'Mixed 2' }, { id: 'm3', name: 'Mixed 3' }, { id: 'l1', name: 'Ladies 1' }];
+  /* no team chosen ("Alle") → everybody; else only the team's members */
+  function inTeam(state, p) { const t = state.settings && state.settings.team; return !t || (Array.isArray(p.teams) && p.teams.includes(t)); }
   function defaultState() {
     return {
       version: 1,
+      teams: DEFAULT_TEAMS.map(t => Object.assign({}, t)),
       players: [],
       charts: {},
       formats: [
@@ -614,7 +620,7 @@
         { id: '3v2', name: '3v2', slots: ['Y', 'QB', 'Z', 'SC', 'SS'] }
       ],
       sheets: {},
-      settings: { allowUntried: false, formatId: '3v2', rows: null }
+      settings: { allowUntried: false, formatId: '3v2', rows: null, team: null }
     };
   }
 
@@ -627,6 +633,7 @@
       const name = entry && typeof entry === 'object' ? entry.name : entry;
       const p = { id: 'p' + (i + 1), name: String(name), present: true };
       if (entry && typeof entry === 'object' && entry.side && entry.side !== 'both') p.side = entry.side;
+      if (entry && typeof entry === 'object' && Array.isArray(entry.teams)) p.teams = entry.teams.slice();
       st.players.push(p); byName.set(p.name, p.id);
     });
     for (const pos of Object.keys(seed && seed.charts || {})) {
@@ -674,12 +681,14 @@
       if (p && typeof p.name === 'string') { const k = p.name.trim().toLowerCase(); if (names.has(k)) return false; names.add(k); }
       if (!p || typeof p.id !== 'string' || !ID_RE.test(p.id) || typeof p.name !== 'string' || ids.has(p.id)) return false;
       if (p.side != null && !SIDES.includes(p.side)) return false;
+      if (p.teams != null && (!Array.isArray(p.teams) || !p.teams.every(x => typeof x === 'string'))) return false;
       ids.add(p.id);
     }
     if (s.charts != null) {
       if (typeof s.charts !== 'object' || Array.isArray(s.charts)) return false;
       for (const k of Object.keys(s.charts)) if (!Array.isArray(s.charts[k]) || !s.charts[k].every(x => typeof x === 'string')) return false;
     }
+    if (s.teams != null && (!Array.isArray(s.teams) || !s.teams.every(x => x && typeof x.id === 'string' && ID_RE.test(x.id) && typeof x.name === 'string'))) return false;
     if (s.formats != null) {
       if (!Array.isArray(s.formats)) return false;
       for (const f of s.formats) {
@@ -724,6 +733,11 @@
       if (sh) sh.rows = sh.rows.map(row => order.map(i => row[i] === undefined ? null : row[i]));
     }
     for (const p of s.players) if (typeof p.present !== 'boolean') p.present = true;
+    /* saves from before teams: the four default teams, nobody assigned yet */
+    if (!Array.isArray(s.teams)) s.teams = DEFAULT_TEAMS.map(t => Object.assign({}, t));
+    const teamIds = new Set(s.teams.map(t => t.id));
+    for (const p of s.players) if (Array.isArray(p.teams)) { p.teams = p.teams.filter(x => teamIds.has(x)); if (!p.teams.length) delete p.teams; }
+    if (s.settings.team != null && !teamIds.has(s.settings.team)) s.settings.team = null;
     return s;
   }
 
@@ -885,12 +899,21 @@
   function ctxOf(state) {
     const sides = {};
     for (const p of state.players) if (p.side) sides[p.id] = p.side;
-    return { charts: state.charts, present: new Set(state.players.filter(p => p.present).map(p => p.id)), sides };
+    return { charts: state.charts, present: new Set(state.players.filter(p => p.present && inTeam(state, p)).map(p => p.id)), sides };
+  }
+  function toggleTeam(state, id, teamId) {
+    const p = state.players.find(x => x.id === id);
+    if (!p || !state.teams.some(t => t.id === teamId)) return state;
+    const cur = new Set(p.teams || []);
+    if (cur.has(teamId)) cur.delete(teamId); else cur.add(teamId);
+    const list = state.teams.map(t => t.id).filter(x => cur.has(x));
+    if (list.length) p.teams = list; else delete p.teams;
+    return state;
   }
 
   const api = { KEY, defaultState, fromSeed, load, loadInfo, save, reset, exportJSON, importJSON,
     SIDES, addPlayer, renamePlayer, removePlayer, setPresent, setSide, moveInChart, reorderChart, addToChart, removeFromChart,
-    addFormat, updateFormat, removeFormat, sortedFormats, hasBlitz, ctxOf };
+    addFormat, updateFormat, removeFormat, sortedFormats, hasBlitz, ctxOf, inTeam, toggleTeam };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SetListsState = api;
 })(typeof self !== 'undefined' ? self : this);
@@ -927,7 +950,15 @@
     if (!ok && !saveWarned) { saveWarned = true; alert('Speichern fehlgeschlagen. Der Browser-Speicher ist voll oder gesperrt. Exportiere deine Daten, bevor du die App schließt.'); }
     return ok;
   };
-  const present = () => ui.state.players.filter(p => p.present);
+  const present = () => ui.state.players.filter(p => p.present && State.inTeam(ui.state, p));
+  const teamPlayers = () => ui.state.players.filter(p => State.inTeam(ui.state, p));
+  const teamName = () => { const t = ui.state.teams.find(x => x.id === ui.state.settings.team); return t ? t.name : ''; };
+  /* team filter: "Alle" or one team; the sheet is mixed from the chosen team only */
+  function teamBar() {
+    const cur = ui.state.settings.team || '';
+    const pill = (id, name) => `<button class="pill${cur === id ? ' on' : ''}" data-act="team" data-id="${id}">${esc(name)}</button>`;
+    return `<div class="teambar">${pill('', 'Alle')}${ui.state.teams.map(t => pill(t.id, t.name)).join('')}</div>`;
+  }
   const format = () => ui.state.formats.find(f => f.id === ui.state.settings.formatId) || ui.state.formats[0];
 
   /* ---------- Team screen */
@@ -949,6 +980,9 @@
       <div class="label">Seite</div>
       <div class="addrow">${['both', 'off', 'offOnly', 'def', 'defOnly'].map(sideBtn).join('')}</div>
       <p class="note">„Eher“: spielt die andere Seite nur, wenn es sonst nicht aufgeht. „Nur“: nie die andere Seite.</p>
+      <div class="label">Teams</div>
+      <div class="addrow">${ui.state.teams.map(t => `<button class="pill${(p.teams || []).includes(t.id) ? ' on' : ''}" data-act="player-team" data-team="${t.id}">${esc(t.name)}</button>`).join('')}</div>
+      <p class="note">Mehrere Teams möglich.</p>
       <div class="btnrow"><button class="wide" data-act="player-rename-id" data-id="${p.id}">Umbenennen</button><button class="wide danger" data-act="player-remove-id" data-id="${p.id}">Löschen</button><button class="wide" data-act="player-panel-close">Fertig</button></div>
     </div>`;
   }
@@ -1003,10 +1037,11 @@
     return `<div class="label">Matchups (Coverage)</div>${lines}<p class="note">Ohne feste Matchups vergleicht die App stark gegen stark. Mit Coverage z. B. Cover 2: SC deckt Z.</p>`;
   }
   function teamScreen() {
-    const n = present().length;
+    const n = present().length, members = teamPlayers();
+    const emptyTeam = ui.state.settings.team && !members.length ? `<p class="note warn">Noch niemand in ${esc(teamName())}. Unter „Alle“ einen Namen lang drücken und bei „Teams“ zuordnen.</p>` : '';
     const banner = ui.broken ? `<div class="card warnbox">Die gespeicherten Daten waren nicht lesbar. Die App startet mit den mitgelieferten Daten; eine Kopie der alten Daten liegt im Browser-Speicher unter „setlists.v1.broken“. <button class="link" data-act="broken-dismiss">OK</button></div>` : '';
-    return `${banner}<div class="label">Anwesend heute · ${n} von ${ui.state.players.length}</div>
-      <div class="roster">${ui.state.players.map(chip).join('')}</div>
+    return `${banner}${teamBar()}<div class="label">Anwesend heute${ui.state.settings.team ? ' · ' + esc(teamName()) : ''} · ${n} von ${members.length}</div>
+      ${emptyTeam}<div class="roster">${members.map(chip).join('')}</div>
       ${playerPanel()}
       <div class="btnrow"><button class="wide" data-act="player-add">+ Spieler</button></div>
       <p class="note">Tippen: anwesend / abwesend. Lang drücken: Seite festlegen, umbenennen, löschen.</p>
@@ -1032,13 +1067,13 @@
     const f = format();
     const g = Core.generate({ format: f, present: present().map(p => p.id), charts: ui.state.charts, rows: rowsWanted(),
       allowUntried: ui.state.settings.allowUntried, sides: State.ctxOf(ui.state).sides, rng: Core.mulberry32(Date.now() & 0xffffffff) });
-    ui.state.sheet = { formatId: f.id, rows: g.sheet.rows, createdAt: new Date().toISOString(), edited: false, relaxed: g.relaxed };
+    ui.state.sheet = { formatId: f.id, team: ui.state.settings.team || null, rows: g.sheet.rows, createdAt: new Date().toISOString(), edited: false, relaxed: g.relaxed };
     ui.sel = null; ui.picker = null;
     save();
   }
   function ensureSheet() {
     const f = format();
-    if (!ui.state.sheet || ui.state.sheet.formatId !== f.id || ui.state.sheet.rows.some(r => r.length !== f.slots.length)) regenerate();
+    if (!ui.state.sheet || ui.state.sheet.formatId !== f.id || (ui.state.sheet.team || null) !== (ui.state.settings.team || null) || ui.state.sheet.rows.some(r => r.length !== f.slots.length)) regenerate();
   }
   /* regenerate, but ask first when the coach has edited the sheet by hand; returns false when they declined */
   function regenerateAsked() {
@@ -1048,7 +1083,7 @@
   }
   function shareText() {
     const f = format();
-    const head = f.name + ' · ' + ui.state.sheet.rows.length + ' Sets';
+    const head = (ui.state.settings.team ? teamName() + ' · ' : '') + f.name + ' · ' + ui.state.sheet.rows.length + ' Sets';
     return head + '\n' + ui.state.sheet.rows.map((row, r) => {
       const real = Core.rowPositions(f, row, ctx());
       const parts = f.slots.map((pos, i) => ({ side: Core.SIDE[pos], txt: label(real[i]) + (Core.COLOR_NAME[real[i]] ? ' (' + Core.COLOR_NAME[real[i]] + ')' : '') + ' ' + (row[i] ? nameOf(row[i]) : '—') }));
@@ -1122,7 +1157,7 @@
     const missed = Core.missedBest(f, sheet, c);
     if (missed.length) notes.push('Nicht auf Top-Position: ' + missed.map(m => esc(nameOf(m.id)) + ' (' + m.best.map(label).join('/') + ')').join(', '));
     const fmtBtns = State.sortedFormats(ui.state).map(x => `<button class="pill${x.id === f.id ? ' on' : ''}${State.hasBlitz(x) ? '' : ' noblitz'}" data-act="format" data-id="${x.id}" title="${State.hasBlitz(x) ? '' : 'ohne Blitz'}">${esc(x.name)}${State.hasBlitz(x) ? '' : ' ○'}</button>`).join('');
-    return `<div class="sub">${esc(f.name)} · ${n} Spieler · ${sheet.rows.length} Sets</div>
+    return `${teamBar()}<div class="sub">${ui.state.settings.team ? esc(teamName()) + ' · ' : ''}${esc(f.name)} · ${n} Spieler · ${sheet.rows.length} Sets</div>
       <div class="controls">
         <div class="stepper"><span class="label">Sets</span><button class="mini" data-act="rows" data-dir="-1" ${sheet.rows.length <= min ? 'disabled' : ''}>−</button><span class="val">${sheet.rows.length}</span><button class="mini" data-act="rows" data-dir="1" ${sheet.rows.length >= Core.MAX_ROWS ? 'disabled' : ''}>+</button></div>
         <div class="fmts">${fmtBtns}</div>
@@ -1187,12 +1222,14 @@
     toggle(d) { const p = player(d.id); State.setPresent(ui.state, d.id, !p.present); save(); },
     'player-add'() {
       const n = prompt('Name des Spielers'); if (!n || !n.trim()) return;
-      try { State.addPlayer(ui.state, n); save(); } catch (e) { alert(e.message); }
+      try { const p = State.addPlayer(ui.state, n); if (ui.state.settings.team) p.teams = [ui.state.settings.team]; save(); } catch (e) { alert(e.message); }
     },
     'broken-dismiss'() { ui.broken = false; },
     'player-panel'(d) { ui.panel = ui.panel === d.id ? null : d.id; },
     'player-panel-close'() { ui.panel = null; },
     'player-side'(d) { State.setSide(ui.state, ui.panel, d.side); save(); },
+    'player-team'(d) { State.toggleTeam(ui.state, ui.panel, d.team); save(); },
+    team(d) { ui.state.settings.team = d.id || null; ui.sel = null; ui.picker = null; ui.panel = null; save(); },
     'player-remove-id'(d) {
       const p = player(d.id); if (!p) return;
       if (confirm(p.name + ' löschen? Er/sie verschwindet aus allen Depth Charts.')) { State.removePlayer(ui.state, p.id); ui.panel = null; save(); }
