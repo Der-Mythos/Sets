@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<!-- Set Lists · Rolf · rolf@flag-academy.com · built from Netlify/set-lists-dev/ (edit the sources, run node build.mjs) -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sets">
+<meta name="theme-color" content="#ffffff">
+<title>Sets</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<style>
+  :root{
+    /* light scheme like the other 5v5 apps; offense = Renegades gold, defense = black */
+    --bg:#ffffff; --card:#f0f2f6; --ink:#0b0b0c; --mut:#4a5261;
+    --line:#d3d8e0; --accent:#0b0b0c; --accent-fg:#ffffff;
+    --gold:#ffb100; --black:#111318;   /* Nürnberg Renegades: brand amber and ink from nuernberg-renegades.de */
+    --green:#1f9d55; --yellow:#d39a00; --red:#d0312d; --grey:#a3abb8;
+    --absent:#c9ced8; --sel:#0a4fd6; --warn:#8a5a00; --untried:#d0312d;
+    --offbg:#fff1cc; --offcell:var(--gold); --offfg:#111318;
+    --defbg:#e3e5e9; --defcell:var(--black); --deffg:#ffffff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  body{padding:max(14px,env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom))}
+  .wrap{max-width:720px; margin:0 auto}
+  button{font:inherit; color:inherit}
+  header{display:flex; align-items:center; justify-content:space-between; margin:2px 2px 14px}
+  h1{font-size:22px; margin:0; letter-spacing:.2px}
+  .tabs{display:flex; gap:6px}
+  .tab{min-height:44px; padding:0 18px; border-radius:14px; border:1px solid var(--line); background:var(--card); font-weight:700}
+  .tab.on{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
+  .label{color:var(--mut); font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.6px; margin:18px 4px 8px}
+  .note{color:var(--mut); font-size:13px; margin:10px 4px}
+  .roster{display:grid; grid-template-columns:repeat(5,1fr); gap:9px}
+  .chip{aspect-ratio:1/1; border-radius:16px; border:2px solid var(--line); background:var(--card); color:var(--ink);
+    font-size:17px; font-weight:800; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    overflow:hidden; padding:2px; text-align:center; line-height:1.05; transition:transform .05s ease, opacity .12s ease}
+  .chip.long{font-size:13px; word-break:break-word}
+  .chip:active{transform:scale(.92)}
+  .chip.absent{opacity:.4; background:transparent; border-style:dashed; color:var(--mut)}
+  .chip{position:relative}
+  .chip.open{border-color:var(--sel)}
+  .badge{position:absolute; top:4px; right:4px; font-size:10px; font-weight:800; padding:1px 5px; border-radius:8px; line-height:1.3}
+  .badge.off{background:var(--gold); color:var(--black)} .badge.def{background:var(--black); color:#fff}
+  .panel{border-color:var(--sel); margin-top:10px}
+  .warnbox{background:#fff2c2; color:#523a00; border-color:#e5c56a; margin-bottom:10px; font-size:14px; line-height:1.4}
+.tag{font-size:11px; font-weight:700; padding:1px 6px; border-radius:8px; background:#fff; border:1px dashed var(--mut); color:var(--mut); vertical-align:middle}
+  .pill.noblitz{border-style:dashed}
+  .pairline{display:flex; flex-wrap:wrap; align-items:center; gap:2px; padding:4px 2px; border-top:1px solid var(--line)}
+  .pairdef{font-weight:800; min-width:72px; margin-right:4px}
+  .paneltitle{font-size:18px; font-weight:800; margin:4px 4px 0}
+  .btnrow{display:flex; flex-wrap:wrap; gap:9px; margin-top:9px}
+  .btnrow > .wide{flex:1 1 28%}
+  .wide{flex:1; min-height:44px; padding:10px; border-radius:14px; border:1px solid var(--line); background:var(--card); font-weight:700}
+  .wide.accent{background:var(--gold); color:var(--black); border-color:var(--gold)}
+  .wide.danger{color:var(--red)}
+  .mini{min-width:44px; min-height:44px; border-radius:12px; border:1px solid var(--line); background:var(--card); font-size:16px}
+  .mini:disabled{opacity:.3}
+  .pill{min-height:44px; padding:0 12px; border-radius:20px; border:1px solid var(--line); background:var(--card); font-weight:600; margin:3px}
+  .pill.on{background:var(--black); color:#fff; border-color:var(--black)}
+  .chart{border:1px solid var(--line); border-radius:14px; margin-bottom:8px; background:var(--card); overflow:hidden}
+  .charthead{display:flex; align-items:center; gap:10px; width:100%; min-height:48px; padding:6px 12px; border:0; background:transparent; text-align:left}
+  .charthead .pos{font-weight:800; min-width:34px}
+  .charthead .names{flex:1; color:var(--mut); font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .chartrow{display:flex; align-items:center; gap:6px; padding:4px 10px 4px 4px; border-top:1px solid var(--line); min-height:52px}
+  .chartrow.dragging, tr.dragging{opacity:.5}
+  tr.over > *{box-shadow:inset 0 3px 0 var(--sel)}
+  table.sheet th.num.sethandle{cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; width:34px; line-height:1}
+  table.sheet th.num .grip{display:block; font-size:14px; color:var(--mut); margin-top:2px}
+  .chartrow.over{box-shadow:inset 0 3px 0 var(--sel)}
+  .handle{width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; color:var(--mut); font-size:22px; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none}
+  .chartrow .nm{user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; min-height:44px; display:flex; align-items:center}
+  .chartrow.absent .nm{opacity:.4}
+  .chartrow .rank{color:var(--mut); width:22px; text-align:right}
+  .chartrow .nm{flex:1; font-weight:600}
+  .addrow{display:flex; flex-wrap:wrap; padding:6px}
+  .slotline{display:flex; flex-wrap:wrap; min-height:44px; margin:4px}
+  .fmt{display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--line); border-radius:14px; margin-bottom:8px; background:var(--card)}
+  .fmt .nm{font-weight:800; min-width:44px}
+  .fmt .slots{flex:1; color:var(--mut); font-size:14px}
+  .card{border:1px solid var(--line); border-radius:14px; padding:8px; background:var(--card); margin-bottom:8px}
+  .sub{color:var(--mut); font-size:14px; margin:0 4px 8px}
+  .controls{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap}
+  .stepper{display:flex; align-items:center; gap:6px}
+  .stepper .label{margin:0 4px}
+  .stepper .val{min-width:28px; text-align:center; font-weight:800; font-size:18px}
+  .fmts{display:flex; flex-wrap:wrap}
+  .wide.on{background:var(--black); color:#fff; border-color:var(--black)}
+  .tablewrap{overflow-x:auto; -webkit-overflow-scrolling:touch; margin-top:10px; border:1px solid var(--line); border-radius:14px; background:var(--card)}
+  table.sheet{border-collapse:separate; border-spacing:0; min-width:100%}
+  table.sheet th{color:var(--mut); font-size:13px; font-weight:700; padding:8px 4px; text-align:center; white-space:nowrap}
+  table.sheet th.off{color:var(--ink); background:var(--offbg)} table.sheet th.def{color:var(--ink); background:var(--defbg)}
+  table.sheet td.off{background:var(--offbg)} table.sheet td.def{background:var(--defbg)}
+  .cell.off{background:var(--offcell); color:var(--offfg)} .cell.def{background:var(--defcell); color:var(--deffg)}
+  table.sheet thead th.off:first-of-type{border-top-left-radius:10px}
+  table.sheet th.num{position:sticky; left:0; background:var(--card); z-index:1; width:24px; padding:8px 2px}
+  table.sheet tbody th.num{color:var(--mut); font-size:15px}
+  table.sheet td{padding:3px 1px; text-align:center}
+  table.sheet .split, table.sheet th.split{border-left:2px solid var(--line)}
+  .cell{min-width:46px; min-height:44px; padding:4px 3px; border-radius:12px; border:2px solid transparent; background:var(--card); font-weight:700; font-size:14px; letter-spacing:-.2px; white-space:nowrap}
+  .cell.sel{border-color:var(--sel); box-shadow:0 0 0 2px var(--sel)}
+  .cell.empty{background:transparent !important; border:2px dashed var(--line); color:var(--mut)}
+  .cell.untried{outline:3px dashed var(--untried); outline-offset:-3px}
+  .cell.dup{outline:3px solid var(--red); outline-offset:-3px}
+  .mark{min-width:30px; min-height:44px; padding:0; border:0; background:transparent; font-size:22px; line-height:1}
+  .mark.green{color:var(--green)} .mark.yellow{color:var(--yellow)} .mark.red{color:var(--red)} .mark.grey{color:var(--grey)}
+  .note.warn{color:var(--warn)}
+  .link{border:0; background:transparent; color:var(--sel); text-decoration:underline; font-weight:700; padding:0; min-height:0}
+  .picker .pill.untried{border-style:dashed}
+  .picker .pill.rested{border:2px solid var(--green); background:#e6f6ec; color:#0b4420}
+  .picker .pill.demo{min-height:0; padding:0 8px; font-size:12px; margin:0}
+  .pill:disabled{opacity:.3}
+  /* show mode */
+  .present{position:fixed; inset:0; z-index:10; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+    font-size:min(calc(96vw / var(--fw)), calc(92vh / var(--fh)));
+    font-size:min(calc(96vw / var(--fw)), calc(92dvh / var(--fh)))}
+  .pinner{display:flex; flex-direction:column; align-items:center}
+  .ptitle{font-weight:800; font-size:1.1em; margin-bottom:.3em; letter-spacing:.02em}
+  .ptable{border-collapse:separate; border-spacing:.12em .14em}
+  .ptable th{font-size:.62em; font-weight:800; color:var(--ink); padding:.25em .3em}
+  .ptable thead th.off, .ptable td.off{background:var(--offbg)} .ptable thead th.def, .ptable td.def{background:var(--defbg)}
+  .ptable .split{border-left:.12em solid #fff}
+  .ptable th.pnum{font-size:.7em; color:var(--mut); padding-right:.4em}
+  .ptable td{padding:.06em .08em; text-align:center}
+  .pcell{display:block; padding:.18em .35em; border-radius:.3em; font-weight:800; white-space:nowrap; line-height:1.15}
+  .pcell.off{background:var(--gold); color:var(--black)} .pcell.def{background:var(--black); color:#fff}
+  .pcell.empty{background:transparent; color:var(--mut)}
+  .presentclose{position:fixed; top:max(8px,env(safe-area-inset-top)); right:max(8px,env(safe-area-inset-right)); width:44px; height:44px;
+    border-radius:22px; border:1px solid var(--line); background:#fff; font-size:26px; line-height:1; color:var(--mut); font-size:26px}
+  @media (max-width:420px){ .roster{grid-template-columns:repeat(4,1fr)} }
+  .cpos{display:block; font-size:.62em; font-weight:800; opacity:.7; line-height:1; margin-bottom:1px; letter-spacing:.02em}
+  .pill.wild{border-style:dashed}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>const SEED = {"players":["Luis","Linus","Gerda","Stina","Johannes","Fabio","Lukas","Bruno","Leo","Gustav","Josef","Toni","Nicolas","Carla","Felix","Leonard","Moritz","Olli","Ayaz","Alessandro"],"charts":{"QB":["Stina","Luis","Gustav","Carla","Lukas"],"C":["Gerda","Fabio","Stina","Nicolas","Leonard"],"X":["Luis","Fabio","Leo","Josef","Olli"],"Y":["Linus","Lukas","Bruno","Toni","Felix","Ayaz"],"Z":["Johannes","Bruno","Fabio","Lukas","Moritz","Alessandro"],"WC":["Luis","Bruno","Lukas","Toni","Carla","Alessandro"],"FS":["Johannes","Linus","Lukas","Leo"],"B":["Stina","Bruno","Olli","Felix","Ayaz"],"SS":["Gerda","Johannes","Moritz","Leonard"],"SC":["Gustav","Fabio","Gerda","Nicolas","Josef"]}};</script>
+<script>
+// Set Lists core: pure functions (strengths, row score, fairness rules, generator).
+// Works as a Node module (tests) and as a plain script inlined into Set-Lists.html (global SetListsCore).
+(function (root) {
+  'use strict';
+  const POSITIONS = ['X', 'Y', 'C', 'QB', 'Z', 'SC', 'SS', 'B', 'FS', 'WC'];   /* column order on the sheet: offense, then defense */
+  const SIDE = { QB: 'off', C: 'off', X: 'off', Y: 'off', Z: 'off', WC: 'def', FS: 'def', B: 'def', SS: 'def', SC: 'def' };
+  /* wildcard slots: "any offense / any defense position" (no QB, no blitzer). Per set, each player in such a slot gets
+     one concrete position of the group, all different within the set, chosen so the players fit best */
+  const GROUP = { O: ['X', 'Y', 'C', 'Z'], D: ['SC', 'SS', 'FS', 'WC'] };
+  SIDE.O = 'off'; SIDE.D = 'def';
+  const SLOTS = ['X', 'Y', 'C', 'QB', 'Z', 'O', 'SC', 'SS', 'B', 'FS', 'WC', 'D'];   /* everything a format may use, in column order */
+  const LABEL = { O: 'OFF', D: 'DEF' };   /* display names, when one should differ from its key. Offense: X, Y, C receivers, QB, Z receiver; defense: SC strong side corner, SS strong side safety, B blitzer, FS free/weak side safety, WC weak side corner */
+  const UNTRIED = 2.5;
+
+  /* chart filtered to present ids, order kept, unknown ids and duplicates dropped */
+  function presentOrder(chart, present) {
+    const out = [];
+    for (const id of chart || []) if (present.has(id) && !out.includes(id)) out.push(id);
+    return out;
+  }
+
+  /* rank among present players on that chart → 1 (best) .. 4 (weakest); not on chart → 2.5 untried */
+  function strengthOf(pos, id, ctx) {
+    if (ctx.cache) {
+      const k = pos + '@' + id;
+      let v = ctx.cache.get(k);
+      if (!v) { v = strengthOf(pos, id, { charts: ctx.charts, present: ctx.present }); ctx.cache.set(k, v); }
+      return v;
+    }
+    if (GROUP[pos]) {
+      /* wildcard: the player's best position of the group */
+      let best = null;
+      for (const m of GROUP[pos]) {
+        const v = strengthOf(m, id, ctx);   /* charted beats untried, then the better rank */
+        if (!best || (best.untried && !v.untried) || (best.untried === v.untried && v.s < best.s)) best = Object.assign({ pos: m }, v);
+      }
+      return best;
+    }
+    const order = presentOrder(ctx.charts[pos], ctx.present);
+    const i = order.indexOf(id);
+    if (i < 0) return { s: UNTRIED, untried: true };
+    const n = order.length;
+    return { s: n === 1 ? 1 : 1 + 3 * i / (n - 1), untried: false };
+  }
+
+  /* side preference per player: 'off' / 'def' = mostly, 'offOnly' / 'defOnly' = exclusively, missing = both */
+  function prefOf(id, ctx) { return (ctx.sides && ctx.sides[id]) || 'both'; }
+  /* exclusive players never play the other side; this rule never relaxes */
+  function sideOk(pos, id, ctx) {
+    const p = prefOf(id, ctx);
+    if (p === 'offOnly') return SIDE[pos] === 'off';
+    if (p === 'defOnly') return SIDE[pos] === 'def';
+    return true;
+  }
+  /* a mostly-offense player on defense, or the other way round: allowed, but it costs */
+  function sideMismatch(pos, id, ctx) {
+    const p = prefOf(id, ctx);
+    return (p === 'off' && SIDE[pos] === 'def') || (p === 'def' && SIDE[pos] === 'off');
+  }
+  /* the format positions where a player ranks highest among present players (charted, allowed side, preferred side first) */
+  function bestPositions(format, id, ctx) {
+    const key = 'best@' + id + '@' + format.slots.join(',');
+    if (ctx.cache && ctx.cache.has(key)) return ctx.cache.get(key);
+    let cands = [...new Set(format.slots)].filter(pos => sideOk(pos, id, ctx) && !strengthOf(pos, id, ctx).untried);
+    const preferred = cands.filter(pos => !sideMismatch(pos, id, ctx));
+    if (preferred.length) cands = preferred;
+    let best = [];
+    if (cands.length) {
+      const min = Math.min(...cands.map(pos => strengthOf(pos, id, ctx).s));
+      best = cands.filter(pos => strengthOf(pos, id, ctx).s <= min + 1e-9);
+    }
+    if (ctx.cache) ctx.cache.set(key, best);
+    return best;
+  }
+  /* present players who have a best position but no rep there */
+  function missedBest(format, sheet, ctx) {
+    const at = new Set();
+    sheet.rows.forEach(row => row.forEach((id, i) => { if (id) at.add(id + '@' + format.slots[i]); }));
+    const out = [];
+    for (const id of ctx.present) {
+      const best = bestPositions(format, id, ctx);
+      if (best.length && !best.some(pos => at.has(id + '@' + pos))) out.push({ id, best });
+    }
+    return out;
+  }
+
+  /* positions of the group a wildcard slot may take in this format: concrete slots of the format are taken already */
+  function groupFree(format, g) { return GROUP[g].filter(m => !format.slots.includes(m)); }
+  /* concrete position per slot for one set: wildcard slots of a group get distinct positions with the lowest strength sum */
+  function rowPositions(format, row, ctx) {
+    const out = format.slots.slice();
+    for (const g of Object.keys(GROUP)) {
+      const idx = []; format.slots.forEach((pos, i) => { if (pos === g) idx.push(i); });
+      if (!idx.length) continue;
+      const free = groupFree(format, g);
+      let best = null, bestSum = Infinity;
+      const pick = (k, used, cur, sum) => {
+        if (sum >= bestSum) return;
+        if (k === idx.length) { best = cur.slice(); bestSum = sum; return; }
+        const id = row[idx[k]];
+        for (const m of free) {
+          if (used.has(m)) continue;
+          used.add(m); cur.push(m);
+          const v = id ? strengthOf(m, id, ctx) : null;   /* an untried spot costs more than any charted one */
+          pick(k + 1, used, cur, sum + (v ? v.s + (v.untried ? 10 : 0) : 0) + free.indexOf(m) * 1e-6);
+          used.delete(m); cur.pop();
+        }
+      };
+      pick(0, new Set(), [], 0);
+      if (best) idx.forEach((i, k) => { out[i] = best[k]; });
+    }
+    return out;
+  }
+
+  function markOf(score) { return score <= 1 ? 'green' : score <= 2 ? 'yellow' : 'red'; }
+  function mean(xs) { return xs.reduce((a, b) => a + b, 0) / xs.length; }
+
+  /* competitive rule for one row: sorted offense vs sorted defense pairwise, Q vs defense mean, leftovers vs other mean.
+     score = largest gap. Empty slot or empty side → grey / null. */
+  function rowScore(format, row, ctx) {
+    const grey = { score: null, mark: 'grey', worst: null };
+    const slots = format.slots;
+    const off = [], def = []; let q = null;
+    if (row.some(id => !id)) return grey;
+    const real = slots.some(p => GROUP[p]) ? rowPositions(format, row, ctx) : slots;
+    for (let i = 0; i < slots.length; i++) {
+      const id = row[i];
+      const pos = real[i];
+      const e = { pos, id, slot: i, s: strengthOf(pos, id, ctx).s };
+      if (pos === 'QB' && !q) q = e;
+      else if (SIDE[pos] === 'off') off.push(e); else def.push(e);
+    }
+    if (!def.length || (!off.length && !q)) return grey;
+    const pairs = [];
+    /* explicit matchups from the coverage: defense slot → offense slot; the rest pairs by strength below */
+    const explicit = format.pairs || {};
+    const used = new Set();
+    for (const dk of Object.keys(explicit)) {
+      const di = Number(dk), oi = Number(explicit[dk]);
+      const d = def.find(e => e.slot === di);
+      const o = off.find(e => e.slot === oi) || (q && q.slot === oi ? q : null);
+      if (!d || !o || used.has(d) || used.has(o)) continue;
+      used.add(d); used.add(o);
+      pairs.push({ a: d, b: o, gap: Math.abs(d.s - o.s) });
+    }
+    const offRest = off.filter(e => !used.has(e)), defRest = def.filter(e => !used.has(e));
+    const bys = (a, b) => a.s - b.s;
+    offRest.sort(bys); defRest.sort(bys);
+    const n = Math.min(offRest.length, defRest.length);
+    for (let i = 0; i < n; i++) pairs.push({ a: offRest[i], b: defRest[i], gap: Math.abs(offRest[i].s - defRest[i].s) });
+    const defMean = mean(def.map(e => e.s));
+    const offMean = off.length ? mean(off.map(e => e.s)) : defMean;
+    for (let i = n; i < offRest.length; i++) pairs.push({ a: offRest[i], b: { mean: defMean }, gap: Math.abs(offRest[i].s - defMean) });
+    for (let i = n; i < defRest.length; i++) pairs.push({ a: defRest[i], b: { mean: offMean }, gap: Math.abs(defRest[i].s - offMean) });
+    if (q && !used.has(q)) pairs.push({ a: q, b: { mean: defMean }, gap: Math.abs(q.s - defMean) });
+    if (!pairs.length) return grey;
+    let worst = pairs[0];
+    for (const p of pairs) if (p.gap > worst.gap) worst = p;
+    const score = Math.round(worst.gap * 1000) / 1000;
+    return { score, mark: markOf(score), worst };
+  }
+
+  const MAX_ROWS = 12;
+  function minRows(present, slots) { return Math.max(1, Math.ceil(present / Math.max(1, slots))); }
+  /* smallest multiple of minRows ≤ 12 where every present player can get equal reps, else minRows */
+  function suggestedRows(present, slots) {
+    const m = minRows(present, slots);
+    if (present > 0) for (let r = m; r <= MAX_ROWS; r += m) if ((r * slots) % present === 0) return r;
+    return m;
+  }
+  function repCounts(sheet, present) {
+    const m = new Map();
+    for (const id of present) m.set(id, 0);
+    for (const row of sheet.rows) for (const id of row) if (id && m.has(id)) m.set(id, m.get(id) + 1);
+    return m;
+  }
+  /* rule 1 missing player, rule 2 rep spread > limit, rule 3 untried fill when not allowed, rule 4 duplicate in a row */
+  function violations(format, sheet, ctx, opts) {
+    opts = opts || {};
+    const spread = opts.repSpread == null ? 1 : opts.repSpread;
+    const out = [];
+    const reps = repCounts(sheet, ctx.present);
+    for (const [id, n] of reps) if (n === 0) out.push({ rule: 1, id });
+    const counts = [...reps.values()];
+    if (counts.length && Math.max(...counts) - Math.min(...counts) > spread) out.push({ rule: 2 });
+    sheet.rows.forEach((row, r) => {
+      const seen = new Set();
+      row.forEach((id, i) => {
+        if (!id) return;
+        if (seen.has(id)) out.push({ rule: 4, row: r, slot: i, id });
+        seen.add(id);
+        if (!opts.allowUntried && strengthOf(format.slots[i], id, ctx).untried) out.push({ rule: 3, row: r, slot: i, id });
+        if (!sideOk(format.slots[i], id, ctx)) out.push({ rule: 6, row: r, slot: i, id });
+      });
+    });
+    return out;
+  }
+  const REPEAT_PENALTY = 0.25;
+  const UNTRIED_COST = 30;          /* more than any one move can gain (two rows' score² + two best-position bonuses): untried stays a last resort */
+  const UNTRIED_COST_ALLOWED = 2;
+  const SIDE_COST = 4;              /* a mostly-offense player on defense (or the other way round) */
+  const BEST_MISS_COST = 4;         /* a player without a rep at their best position */   /* with "Untried an": still prefer charted players unless the gain is real */
+  /* Σ score² over scored rows + 0.25 per (player, position) repeat beyond the first + a cost per untried fill */
+  function sheetCost(format, sheet, ctx) {
+    let cost = 0;
+    const seen = new Map();
+    const uc = ctx.untriedCost == null ? UNTRIED_COST : ctx.untriedCost;
+    for (const row of sheet.rows) {
+      const r = rowScore(format, row, ctx);
+      if (r.score != null) cost += r.score * r.score;
+      const real = format.slots.some(p => GROUP[p]) ? rowPositions(format, row, ctx) : format.slots;   /* two players who both want X: one of them is untried */
+      row.forEach((id, i) => {
+        if (!id) return;
+        if (strengthOf(real[i], id, ctx).untried) cost += format.slots[i] === 'QB' ? uc * 2 : uc;   /* QB is the worst place to try someone */
+        if (sideMismatch(format.slots[i], id, ctx)) cost += SIDE_COST;
+        const k = id + '@' + format.slots[i];
+        const n = (seen.get(k) || 0) + 1; seen.set(k, n);
+        if (n > 1) cost += REPEAT_PENALTY;
+      });
+    }
+    if (ctx.present) cost += BEST_MISS_COST * missedBest(format, sheet, ctx).length;
+    return cost;
+  }
+
+  /* seeded RNG (same as 5v5-call-sim-dev/engine.js) */
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* relaxation levels: 0 strict · 1 drop variety (rule 5) · 2 allow untried (rule 3) · 3 rep spread 2 (rule 2) */
+  const LEVEL_NAMES = [null, 'variety', 'untried', 'reps2'];
+
+  function greedyFill(format, present, ctx, rows, level, allowUntried, rng) {
+    const slots = format.slots;
+    const sheet = { rows: Array.from({ length: rows }, () => slots.map(() => null)) };
+    const reps = new Map(present.map(id => [id, 0]));
+    const atPos = new Map();
+    const untriedOk = allowUntried || level >= 2;
+    const charted = pos => present.filter(id => sideOk(pos, id, ctx) && !strengthOf(pos, id, ctx).untried);
+    /* scarcest positions first, so they get first pick of the low-rep players */
+    const cols = slots.map((pos, i) => ({ i, pos, n: charted(pos).length })).sort((a, b) => a.n - b.n);
+    /* players with no charted slot in this format must go somewhere: they are the only untried fills the greedy makes */
+    const needsUntried = new Set(present.filter(id => !slots.some(pos => sideOk(pos, id, ctx) && !strengthOf(pos, id, ctx).untried)));
+    const options = new Map(present.map(id => [id, new Set(slots.filter(pos => sideOk(pos, id, ctx) && !strengthOf(pos, id, ctx).untried)).size]));
+    for (const col of cols) {
+      for (let r = 0; r < rows; r++) {
+        const row = sheet.rows[r];
+        let cands = charted(col.pos).filter(id => !row.includes(id));
+        if (untriedOk) {
+          const zero = [...needsUntried].filter(id => !row.includes(id) && reps.get(id) === 0 && sideOk(col.pos, id, ctx));
+          if (zero.length) cands = zero;                               /* give a chartless player their first rep */
+          else if (!cands.length) cands = present.filter(id => !row.includes(id) && sideOk(col.pos, id, ctx));
+        }
+        if (!cands.length) continue;
+        /* fewest reps first; then the least flexible player (fewest charted positions), so specialists get their spot;
+           then variety; then chance */
+        const key = id => [reps.get(id), options.get(id), level >= 1 ? 0 : (atPos.get(id + '@' + col.pos) || 0), rng()];
+        let best = null, bestKey = null;
+        for (const id of cands) {
+          const k = key(id);
+          let less = !bestKey;
+          if (!less) for (let j = 0; j < k.length; j++) { if (k[j] !== bestKey[j]) { less = k[j] < bestKey[j]; break; } }
+          if (less) { best = id; bestKey = k; }
+        }
+        row[col.i] = best;
+        reps.set(best, reps.get(best) + 1);
+        atPos.set(best + '@' + col.pos, (atPos.get(best + '@' + col.pos) || 0) + 1);
+      }
+    }
+    return sheet;
+  }
+
+  function cellOk(format, row, i, id, ctx, untriedOk) {
+    if (!id) return true;
+    for (let j = 0; j < row.length; j++) if (j !== i && row[j] === id) return false;
+    if (!sideOk(format.slots[i], id, ctx)) return false;
+    return untriedOk || !strengthOf(format.slots[i], id, ctx).untried;
+  }
+
+  /* fairness penalty with a gradient: every rep above or below the allowed band counts one, a zero-rep player two.
+     Band: floor(avg)..ceil(avg), widened by (spread-1) on one side so its width is exactly `spread`. */
+  function fairPenalty(sheet, present, spread) {
+    const reps = repCounts(sheet, present);
+    const n = reps.size; if (!n) return 0;
+    let total = 0; for (const v of reps.values()) total += v;
+    const avg = total / n;
+    let lo = Math.floor(avg), hi = Math.ceil(avg);
+    if (lo === hi) hi += spread - 1; else lo -= spread - 1;
+    lo = Math.max(1, lo);
+    let pen = 0;
+    for (const v of reps.values()) {
+      if (v === 0) pen += 2;
+      else if (v < lo) pen += lo - v;
+      else if (v > hi) pen += v - hi;
+    }
+    return pen;
+  }
+
+  function randomMove(sheet, format, ctx, present, untriedOk, rng) {
+    const rows = sheet.rows.length, slots = format.slots.length;
+    const r1 = Math.floor(rng() * rows), i1 = Math.floor(rng() * slots);
+    const a = sheet.rows[r1][i1];
+    if (rng() < 0.5) {
+      const r2 = Math.floor(rng() * rows), i2 = Math.floor(rng() * slots);
+      const b = sheet.rows[r2][i2];
+      if ((r1 === r2 && i1 === i2) || a === b) return null;
+      sheet.rows[r1][i1] = b; sheet.rows[r2][i2] = a;
+      const ok = cellOk(format, sheet.rows[r1], i1, b, ctx, untriedOk) && cellOk(format, sheet.rows[r2], i2, a, ctx, untriedOk);
+      const undo = () => { sheet.rows[r1][i1] = a; sheet.rows[r2][i2] = b; };
+      if (!ok) { undo(); return null; }
+      return undo;
+    }
+    const b = present[Math.floor(rng() * present.length)];
+    if (b === a) return null;
+    sheet.rows[r1][i1] = b;
+    const undo = () => { sheet.rows[r1][i1] = a; };
+    if (!cellOk(format, sheet.rows[r1], i1, b, ctx, untriedOk)) { undo(); return null; }
+    return undo;
+  }
+
+  /* phase 1: random walk on rules 1 and 2 only (accepts equal or better), until the penalty is zero */
+  function repairFairness(format, sheet, ctx, untriedOk, rng, deadline, maxTries, spread) {
+    const present = [...ctx.present];
+    const untriedCount = () => { let n = 0; sheet.rows.forEach(row => row.forEach((id, i) => { if (id && strengthOf(format.slots[i], id, ctx).untried) n++; })); return n; };
+    let pen = fairPenalty(sheet, ctx.present, spread), un = untriedCount(), tries = 0;
+    while (pen > 0 && tries < maxTries && Date.now() < deadline) {
+      tries++;
+      const undo = randomMove(sheet, format, ctx, present, untriedOk, rng);
+      if (!undo) continue;
+      const p = fairPenalty(sheet, ctx.present, spread), u = untriedCount();
+      if (p < pen || (p === pen && u <= un)) { pen = p; un = u; } else undo();
+    }
+    return pen;
+  }
+
+  /* phase 2: lower the sheet cost with moves that keep the fairness penalty, accepting strictly lower cost */
+  function improve(format, sheet, ctx, untriedOk, rng, deadline, maxTries, spread) {
+    const present = [...ctx.present];
+    const pen = fairPenalty(sheet, ctx.present, spread);
+    let cost = sheetCost(format, sheet, ctx), tries = 0, stale = 0;
+    while (tries < maxTries && stale < 1000 && Date.now() < deadline) {
+      tries++; stale++;
+      const undo = randomMove(sheet, format, ctx, present, untriedOk, rng);
+      if (!undo) continue;
+      if (fairPenalty(sheet, ctx.present, spread) > pen) { undo(); continue; }
+      const c = sheetCost(format, sheet, ctx);
+      if (c < cost) { cost = c; stale = 0; } else undo();
+    }
+    return sheet;
+  }
+
+  /* exhaustive cleanup: a charted player sitting on an untried spot is swapped with any cell that lowers the cost
+     and keeps the fairness penalty; random search can miss these two-cell fixes */
+  function cleanupUntried(format, sheet, ctx, untriedOk, spread) {
+    const rows = sheet.rows.length, slots = format.slots.length;
+    const pen = fairPenalty(sheet, ctx.present, spread);
+    const charted = id => format.slots.some(pos => sideOk(pos, id, ctx) && !strengthOf(pos, id, ctx).untried);
+    let changed = true, guard = 0;
+    while (changed && guard++ < 20) {
+      changed = false;
+      for (let r1 = 0; r1 < rows; r1++) for (let i1 = 0; i1 < slots; i1++) {
+        const a = sheet.rows[r1][i1];
+        if (!a || !strengthOf(format.slots[i1], a, ctx).untried || !charted(a)) continue;
+        let cost = sheetCost(format, sheet, ctx), best = null;
+        for (let r2 = 0; r2 < rows; r2++) for (let i2 = 0; i2 < slots; i2++) {
+          if (r1 === r2 && i1 === i2) continue;
+          const b = sheet.rows[r2][i2];
+          sheet.rows[r1][i1] = b; sheet.rows[r2][i2] = a;
+          if (cellOk(format, sheet.rows[r1], i1, b, ctx, untriedOk) && cellOk(format, sheet.rows[r2], i2, a, ctx, untriedOk) && fairPenalty(sheet, ctx.present, spread) <= pen) {
+            const c = sheetCost(format, sheet, ctx);
+            if (c < cost) { cost = c; best = [r2, i2]; }
+          }
+          sheet.rows[r1][i1] = a; sheet.rows[r2][i2] = b;
+        }
+        if (best) { const [r2, i2] = best; sheet.rows[r1][i1] = sheet.rows[r2][i2]; sheet.rows[r2][i2] = a; changed = true; }
+      }
+    }
+    return sheet;
+  }
+
+  /* builds a sheet: greedy fill then local search; relaxes rules in order variety → untried → reps2 until rules 1-4 hold */
+  function generate(o) {
+    const ctx = { charts: o.charts, present: new Set(o.present), sides: o.sides || {}, cache: new Map(), untriedCost: o.allowUntried ? UNTRIED_COST_ALLOWED : UNTRIED_COST };
+    const rng = o.rng || mulberry32(Date.now() & 0xffffffff);
+    const budget = o.budgetMs == null ? 150 : o.budgetMs;
+    const maxTries = o.maxTries == null ? 6000 : o.maxTries;
+    const deadline = Date.now() + budget;
+    let sheet = null, relaxed = [];
+    for (let level = 0; level <= 3; level++) {
+      const untriedOk = o.allowUntried || level >= 2;
+      sheet = greedyFill(o.format, o.present, ctx, o.rows, level, o.allowUntried, rng);
+      const spread = level >= 3 ? 2 : 1;
+      repairFairness(o.format, sheet, ctx, untriedOk, rng, deadline, maxTries, spread);
+      improve(o.format, sheet, ctx, untriedOk, rng, deadline, maxTries, spread);
+      cleanupUntried(o.format, sheet, ctx, untriedOk, spread);
+      relaxed = LEVEL_NAMES.slice(1, level + 1).filter(n => !(n === 'untried' && o.allowUntried));
+      const v = violations(o.format, sheet, ctx, { allowUntried: untriedOk, repSpread: level >= 3 ? 2 : 1 });
+      if (!v.length) break;
+    }
+    /* strongest set first: the chart leaders open set 1 */
+    sheet.rows.sort((a, b) => rowStrength(o.format, a, ctx) - rowStrength(o.format, b, ctx));
+    const untried = [];
+    sheet.rows.forEach((row, r) => row.forEach((id, i) => {
+      if (id && strengthOf(o.format.slots[i], id, ctx).untried) untried.push({ row: r, slot: i, id });
+    }));
+    return { sheet, relaxed, untried };
+  }
+
+  /* mean strength of the filled slots in a row (1 = strongest); Infinity for an empty row */
+  function rowStrength(format, row, ctx) {
+    let sum = 0, n = 0;
+    row.forEach((id, i) => { if (id) { sum += strengthOf(format.slots[i], id, ctx).s; n++; } });
+    return n ? sum / n : Infinity;
+  }
+
+  const api = { POSITIONS, SLOTS, GROUP, groupFree, rowPositions, SIDE, LABEL, UNTRIED, MAX_ROWS, rowStrength, sideOk, sideMismatch, bestPositions, missedBest, presentOrder, strengthOf, rowScore, markOf,
+    minRows, suggestedRows, repCounts, violations, sheetCost, mulberry32, generate, greedyFill, repairFairness, fairPenalty };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.SetListsCore = api;
+})(typeof self !== 'undefined' ? self : this);
+
+</script>
+<script>
+// Set Lists state: defaults, persistence, seed, import/export, roster and format edits.
+// Node module (tests) or inlined script (global SetListsState; needs SetListsCore loaded first).
+// Every mutator changes the given state in place and returns it (or the new item); callers save afterwards.
+(function (root) {
+  'use strict';
+  const Core = typeof require !== 'undefined' ? require('./core.js') : root.SetListsCore;
+  const KEY = 'setlists.v1';
+
+  /* offense before defense, each in POSITIONS order */
+  function slotRank(pos) { return (Core.SIDE[pos] === 'off' ? 0 : 100) + Core.SLOTS.indexOf(pos); }
+
+  /* `state.sheet` reads and writes `state.sheets[state.settings.formatId]`; not serialized (non-enumerable) */
+  function attachSheetView(s) {
+    if (Object.getOwnPropertyDescriptor(s, 'sheet') && Object.getOwnPropertyDescriptor(s, 'sheet').get) return s;
+    Object.defineProperty(s, 'sheet', {
+      enumerable: false, configurable: true,
+      get() { return this.sheets[this.settings.formatId] || null; },
+      set(v) { if (v) this.sheets[this.settings.formatId] = v; else delete this.sheets[this.settings.formatId]; }
+    });
+    return s;
+  }
+
+  function defaultState() {
+    return {
+      version: 1,
+      players: [],
+      charts: {},
+      formats: [
+        { id: '2v2', name: '2v2', slots: ['QB', 'Z', 'SC', 'B'] },
+        { id: '3v2', name: '3v2', slots: ['Y', 'QB', 'Z', 'SC', 'SS'] }
+      ],
+      sheets: {},
+      settings: { allowUntried: false, formatId: '3v2', rows: null }
+    };
+  }
+
+  /* seed = {players: [name], charts: {pos: [name]}} → state with ids p1..pn, everyone present */
+  function fromSeed(seed) {
+    const st = attachSheetView(defaultState());
+    const byName = new Map();
+    (seed && seed.players || []).forEach((name, i) => {
+      const p = { id: 'p' + (i + 1), name: String(name), present: true };
+      st.players.push(p); byName.set(p.name, p.id);
+    });
+    for (const pos of Object.keys(seed && seed.charts || {})) {
+      if (!Core.POSITIONS.includes(pos)) continue;
+      st.charts[pos] = seed.charts[pos].map(n => byName.get(n)).filter(Boolean);
+    }
+    for (const f of (seed && seed.formats || [])) st.formats.push(f);
+    return st;
+  }
+
+  const ID_RE = /^[\w-]+$/;
+  const SIDES = ['both', 'off', 'def', 'offOnly', 'defOnly'];
+  /* pairs: { defenseSlotIndex: offenseSlotIndex }, both inside the slots, one per side */
+  function validPairs(slots, pairs) {
+    if (typeof pairs !== 'object' || Array.isArray(pairs)) return false;
+    for (const k of Object.keys(pairs)) {
+      const d = Number(k), o = pairs[k];
+      if (!Number.isInteger(d) || !Number.isInteger(o) || d < 0 || o < 0 || d >= slots.length || o >= slots.length) return false;
+      if (Core.SIDE[slots[d]] !== 'def' || Core.SIDE[slots[o]] !== 'off') return false;
+    }
+    return true;
+  }
+  /* positions renamed 2026-11-22 (Q→QB, T→Y, $→SS, F→FS): saves and files from before still load */
+  const RENAMED = { Q: 'QB', T: 'Y', $: 'SS', F: 'FS' };
+  function migrate(s) {
+    if (!s || typeof s !== 'object') return s;
+    const ren = k => Object.prototype.hasOwnProperty.call(RENAMED, k) ? RENAMED[k] : k;
+    if (s.charts && typeof s.charts === 'object' && !Array.isArray(s.charts)) {
+      const c = {};
+      for (const k of Object.keys(s.charts)) { const n = ren(k); if (!(n in c) || n === k) c[n] = s.charts[k]; }
+      s.charts = c;
+    }
+    if (Array.isArray(s.formats)) for (const f of s.formats) if (f && Array.isArray(f.slots)) f.slots = f.slots.map(ren);
+    return s;
+  }
+  const validSlots = slots => Array.isArray(slots) && slots.length >= 2 && slots.length <= 10 && slots.every(x => Core.SLOTS.includes(x));
+  /* deep check: a file that passes here renders and generates without a crash */
+  function valid(s) {
+    if (!s || s.version !== 1 || !Array.isArray(s.players)) return false;
+    const ids = new Set(), names = new Set();
+    for (const p of s.players) {
+      if (p && typeof p.name === 'string') { const k = p.name.trim().toLowerCase(); if (names.has(k)) return false; names.add(k); }
+      if (!p || typeof p.id !== 'string' || !ID_RE.test(p.id) || typeof p.name !== 'string' || ids.has(p.id)) return false;
+      if (p.side != null && !SIDES.includes(p.side)) return false;
+      ids.add(p.id);
+    }
+    if (s.charts != null) {
+      if (typeof s.charts !== 'object' || Array.isArray(s.charts)) return false;
+      for (const k of Object.keys(s.charts)) if (!Array.isArray(s.charts[k]) || !s.charts[k].every(x => typeof x === 'string')) return false;
+    }
+    if (s.formats != null) {
+      if (!Array.isArray(s.formats)) return false;
+      for (const f of s.formats) {
+        if (!f || typeof f.id !== 'string' || !ID_RE.test(f.id) || typeof f.name !== 'string' || !validSlots(f.slots)) return false;
+        if (f.pairs != null && !validPairs(f.slots, f.pairs)) return false;
+      }
+    }
+    return true;
+  }
+  function normalize(s) {
+    const d = defaultState();
+    const charts = {};
+    for (const k of Object.keys(s.charts || {})) if (Core.POSITIONS.includes(k)) charts[k] = s.charts[k].slice();
+    s.charts = charts;
+    s.formats = Array.isArray(s.formats) && s.formats.length ? s.formats : d.formats;
+    /* one sheet per format: `sheets[formatId]`; `state.sheet` is a live view on the current format's sheet */
+    const goodSheet = sh => !!(sh && Array.isArray(sh.rows) && sh.rows.every(r => Array.isArray(r)) && typeof sh.formatId === 'string');
+    const sheets = {};
+    if (s.sheets && typeof s.sheets === 'object' && !Array.isArray(s.sheets)) for (const k of Object.keys(s.sheets)) if (goodSheet(s.sheets[k])) sheets[k] = s.sheets[k];
+    if (goodSheet(s.sheet) && !sheets[s.sheet.formatId]) sheets[s.sheet.formatId] = s.sheet;   /* saves from before 2026-11-13 */
+    delete s.sheet;
+    s.sheets = sheets;
+    attachSheetView(s);
+    s.settings = Object.assign(d.settings, s.settings || {});
+    if (!s.formats.some(f => f.id === s.settings.formatId)) s.settings.formatId = s.formats[0].id;
+    /* keep every format in the fixed column order; a saved sheet's names move with their columns */
+    for (const f of s.formats) {
+      /* each position at most once: keep the first, drop the repeat and its sheet column */
+      const seen = new Set();
+      const order = f.slots.map((pos, i) => i).filter(i => { if (seen.has(f.slots[i]) && !Core.GROUP[f.slots[i]]) return false; seen.add(f.slots[i]); return true; })
+        .sort((i, j) => slotRank(f.slots[i]) - slotRank(f.slots[j]) || i - j);
+      if (order.length === f.slots.length && order.every((v, k) => v === k)) continue;
+      if (f.pairs) {
+        /* a matchup that pointed at a dropped repeat now points at the kept copy of that position */
+        const first = i => f.slots.indexOf(f.slots[i]);
+        const moved = {};
+        for (const k of Object.keys(f.pairs)) moved[first(Number(k))] = first(Number(f.pairs[k]));
+        f.pairs = remapPairs(moved, order);
+      }
+      f.slots = order.map(i => f.slots[i]);
+      const sh = s.sheets[f.id];
+      if (sh) sh.rows = sh.rows.map(row => order.map(i => row[i] === undefined ? null : row[i]));
+    }
+    for (const p of s.players) if (typeof p.present !== 'boolean') p.present = true;
+    return s;
+  }
+
+  /* loads the saved state; when a saved value exists but cannot be used, keeps a copy under KEY.broken and says so */
+  function loadInfo(storage, seed) {
+    let raw = null;
+    try { raw = storage.getItem(KEY); } catch (e) { /* storage blocked */ }
+    if (raw != null) {
+      try {
+        const s = migrate(JSON.parse(raw));
+        if (valid(s)) return { state: normalize(s), broken: false };
+      } catch (e) { /* unreadable */ }
+      try { storage.setItem(KEY + '.broken', raw); } catch (e) { /* ignore */ }
+      return { state: fromSeed(seed), broken: true };
+    }
+    return { state: fromSeed(seed), broken: false };
+  }
+  function load(storage, seed) { return loadInfo(storage, seed).state; }
+  /* false when the browser refuses to store (full or blocked), so the caller can warn */
+  function save(storage, state) {
+    try { storage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
+  }
+  function reset(storage) { storage.removeItem(KEY); }
+
+  function exportJSON(state) { return JSON.stringify(state, null, 1); }
+  function importJSON(text) {
+    let s;
+    try { s = migrate(JSON.parse(text)); } catch (e) { throw new Error('ungültige Datei'); }
+    if (!valid(s)) throw new Error('ungültige Datei');
+    return normalize(s);
+  }
+
+  /* ---- players */
+  function nextId(state) {
+    let m = 0;
+    for (const p of state.players) { const n = Number((p.id.match(/^p(\d+)$/) || [])[1]); if (n > m) m = n; }
+    return 'p' + (m + 1);
+  }
+  /* names are unique, ignoring case and surrounding spaces; `selfId` may keep its own name */
+  const nameKey = n => String(n).trim().toLowerCase();
+  function checkName(state, name, selfId) {
+    const n = String(name).trim();
+    if (!n) throw new Error('Name fehlt');
+    if (state.players.some(x => x.id !== selfId && nameKey(x.name) === nameKey(n))) throw new Error(n + ' gibt es schon');
+    return n;
+  }
+  function addPlayer(state, name) {
+    const p = { id: nextId(state), name: checkName(state, name, null), present: true };
+    state.players.push(p);
+    return p;
+  }
+  function renamePlayer(state, id, name) {
+    const p = state.players.find(x => x.id === id);
+    if (p) p.name = checkName(state, name, id);
+    return state;
+  }
+  function clearFromSheet(state, id) {
+    for (const k of Object.keys(state.sheets || {})) for (const row of state.sheets[k].rows) for (let i = 0; i < row.length; i++) if (row[i] === id) row[i] = null;
+  }
+  function removePlayer(state, id) {
+    state.players = state.players.filter(p => p.id !== id);
+    for (const pos of Object.keys(state.charts)) state.charts[pos] = state.charts[pos].filter(x => x !== id);
+    clearFromSheet(state, id);
+    return state;
+  }
+  function setPresent(state, id, present) {
+    const p = state.players.find(x => x.id === id);
+    if (!p) return state;
+    p.present = !!present;
+    if (!present) clearFromSheet(state, id);
+    return state;
+  }
+
+  /* side preference: 'both' (default, stored as no field), 'off' / 'def' mostly, 'offOnly' / 'defOnly' exclusively */
+  function setSide(state, id, side) {
+    if (!SIDES.includes(side)) throw new Error('unbekannte Seite ' + side);
+    const p = state.players.find(x => x.id === id);
+    if (!p) return state;
+    if (side === 'both') delete p.side; else p.side = side;
+    return state;
+  }
+
+  /* ---- depth charts */
+  function chart(state, pos) { return state.charts[pos] || (state.charts[pos] = []); }
+  function moveInChart(state, pos, id, dir) {
+    const c = chart(state, pos), i = c.indexOf(id), j = i + dir;
+    if (i < 0 || j < 0 || j >= c.length) return state;
+    c[i] = c[j]; c[j] = id;
+    return state;
+  }
+  /* move the entry at index `from` to index `to` (both within the chart) */
+  function reorderChart(state, pos, from, to) {
+    const c = chart(state, pos);
+    if (from < 0 || from >= c.length || to < 0 || to >= c.length || from === to) return state;
+    const [id] = c.splice(from, 1);
+    c.splice(to, 0, id);
+    return state;
+  }
+  function addToChart(state, pos, id) {
+    const c = chart(state, pos);
+    if (!c.includes(id)) c.push(id);
+    return state;
+  }
+  function removeFromChart(state, pos, id) {
+    state.charts[pos] = chart(state, pos).filter(x => x !== id);
+    return state;
+  }
+
+  /* ---- formats */
+  /* pairs refer to slot indices; when slots get sorted, the indices follow (order[k] = old index of new slot k) */
+  function remapPairs(pairs, order) {
+    const out = {};
+    for (const k of Object.keys(pairs)) {
+      const d = order.indexOf(Number(k)), o = order.indexOf(Number(pairs[k]));
+      if (d >= 0 && o >= 0) out[d] = o;
+    }
+    return Object.keys(out).length ? out : undefined;
+  }
+  function checkSlots(slots, pairs) {
+    if (!Array.isArray(slots) || slots.length < 2 || slots.length > 10) throw new Error('2 bis 10 Positionen');
+    for (const s of slots) if (!Core.SLOTS.includes(s)) throw new Error('unbekannte Position ' + s);
+    const fixed = slots.filter(s => !Core.GROUP[s]);
+    if (new Set(fixed).size !== fixed.length) throw new Error('Position doppelt');
+    for (const g of Object.keys(Core.GROUP)) if (slots.filter(s => s === g).length > Core.groupFree({ slots }, g).length) throw new Error('zu viele ' + Core.LABEL[g]);
+    if (pairs != null && !validPairs(slots, pairs)) throw new Error('Matchup passt nicht zu den Positionen');
+    const order = slots.map((pos, i) => i).sort((i, j) => slotRank(slots[i]) - slotRank(slots[j]) || i - j);
+    return { slots: order.map(i => slots[i]), pairs: pairs ? remapPairs(pairs, order) : undefined };
+  }
+  function addFormat(state, name, slots, pairs) {
+    const c = checkSlots(slots, pairs);
+    const f = { id: 'f' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), name: String(name).trim(), slots: c.slots };
+    if (c.pairs) f.pairs = c.pairs;
+    state.formats.push(f);
+    return f;
+  }
+  function updateFormat(state, id, name, slots, pairs) {
+    const f = state.formats.find(x => x.id === id);
+    if (!f) return state;
+    const c = checkSlots(slots, pairs);
+    f.name = String(name).trim(); f.slots = c.slots;
+    if (c.pairs) f.pairs = c.pairs; else delete f.pairs;
+    return state;
+  }
+  function removeFormat(state, id) {
+    if (state.formats.length <= 1) return state;
+    state.formats = state.formats.filter(f => f.id !== id);
+    if (state.settings.formatId === id) state.settings.formatId = state.formats[0].id;
+    delete state.sheets[id];
+    return state;
+  }
+
+  /* format helpers for lists: "2v2, 2v3, 3v2 …" order, and whether a format has a blitz (B) */
+  const sideCount = (f, side) => f.slots.filter(p => Core.SIDE[p] === side).length;
+  function sortedFormats(state) {
+    return state.formats.slice().sort((a, b) => sideCount(a, 'off') - sideCount(b, 'off') || sideCount(a, 'def') - sideCount(b, 'def') || a.name.localeCompare(b.name));
+  }
+  function hasBlitz(f) { return f.slots.includes('B'); }
+
+  function ctxOf(state) {
+    const sides = {};
+    for (const p of state.players) if (p.side) sides[p.id] = p.side;
+    return { charts: state.charts, present: new Set(state.players.filter(p => p.present).map(p => p.id)), sides };
+  }
+
+  const api = { KEY, defaultState, fromSeed, load, loadInfo, save, reset, exportJSON, importJSON,
+    SIDES, addPlayer, renamePlayer, removePlayer, setPresent, setSide, moveInChart, reorderChart, addToChart, removeFromChart,
+    addFormat, updateFormat, removeFormat, sortedFormats, hasBlitz, ctxOf };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.SetListsState = api;
+})(typeof self !== 'undefined' ? self : this);
+
+</script>
+<script>
+// Set Lists UI: Team and Sheet screens. Renders with innerHTML; every tap goes through one delegated
+// click listener on #app and is identified by data-act (so the smoke tests can drive it without a browser).
+(function () {
+  'use strict';
+  const Core = window.SetListsCore, State = window.SetListsState;
+  const storage = window.localStorage;
+  const app = document.getElementById('app');
+  const loaded = State.loadInfo(storage, (typeof SEED !== "undefined" ? SEED : null));
+  const ui = { state: loaded.state, broken: loaded.broken, screen: 'team', sel: null, picker: null, open: {}, formatEdit: null };
+
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const label = pos => Core.LABEL[pos] || pos;
+  const player = id => ui.state.players.find(p => p.id === id);
+  const nameOf = id => { const p = player(id); return p ? p.name : '?'; };
+  /* names longer than 8 letters are cut to 7 plus a dot on the sheet table, so 3v2 fits a phone */
+  const shortName = id => { const n = nameOf(id); return n.length > 8 ? n.slice(0, 7) + '.' : n; };
+  let saveWarned = false;
+  const save = () => {
+    const ok = State.save(storage, ui.state);
+    if (!ok && !saveWarned) { saveWarned = true; alert('Speichern fehlgeschlagen. Der Browser-Speicher ist voll oder gesperrt. Exportiere deine Daten, bevor du die App schließt.'); }
+    return ok;
+  };
+  const present = () => ui.state.players.filter(p => p.present);
+  const format = () => ui.state.formats.find(f => f.id === ui.state.settings.formatId) || ui.state.formats[0];
+
+  /* ---------- Team screen */
+  const SIDE_TEXT = { both: 'Beide', off: 'Eher Offense', offOnly: 'Nur Offense', def: 'Eher Defense', defOnly: 'Nur Defense' };
+  const SIDE_BADGE = { off: ['off', 'O'], offOnly: ['off', 'O!'], def: ['def', 'D'], defOnly: ['def', 'D!'] };
+  function chip(p) {
+    const long = p.name.length > 6 ? ' long' : '';
+    const b = SIDE_BADGE[p.side];
+    const badge = b ? `<span class="badge ${b[0]}">${b[1]}</span>` : '';
+    const open = ui.panel === p.id ? ' open' : '';
+    return `<button class="chip${p.present ? '' : ' absent'}${long}${open}" data-act="toggle" data-hold="panel" data-id="${p.id}">${esc(p.name)}${badge}</button>`;
+  }
+  function playerPanel() {
+    const p = player(ui.panel);
+    if (!p) return '';
+    const cur = p.side || 'both';
+    const sideBtn = k => `<button class="pill${cur === k ? ' on' : ''}" data-act="player-side" data-side="${k}">${SIDE_TEXT[k]}</button>`;
+    return `<div class="card panel"><div class="paneltitle">${esc(p.name)}</div>
+      <div class="label">Seite</div>
+      <div class="addrow">${['both', 'off', 'offOnly', 'def', 'defOnly'].map(sideBtn).join('')}</div>
+      <p class="note">„Eher“: spielt die andere Seite nur, wenn es sonst nicht aufgeht. „Nur“: nie die andere Seite.</p>
+      <div class="btnrow"><button class="wide" data-act="player-rename-id" data-id="${p.id}">Umbenennen</button><button class="wide danger" data-act="player-remove-id" data-id="${p.id}">Löschen</button><button class="wide" data-act="player-panel-close">Fertig</button></div>
+    </div>`;
+  }
+  function chartSection(pos) {
+    const ids = ui.state.charts[pos] || [];
+    const isOpen = !!ui.open[pos];
+    const head = `<button class="charthead" data-act="chart-open" data-pos="${pos}"><span class="pos">${label(pos)}</span><span class="names">${ids.length ? ids.map(id => esc(nameOf(id))).join(', ') : '<i>leer</i>'}</span><span class="caret">${isOpen ? '▾' : '▸'}</span></button>`;
+    if (!isOpen) return `<div class="chart">${head}</div>`;
+    const rows = ids.map((id, i) => {
+      const p = player(id);
+      return `<div class="chartrow${p && p.present ? '' : ' absent'}"><span class="handle" data-act="drag" data-list="chart" data-pos="${pos}" data-i="${i}">≡</span><span class="rank">${i + 1}</span><span class="nm" data-hold="rename" data-pos="${pos}" data-id="${id}">${esc(nameOf(id))}</span>
+        <button class="mini" data-act="chart-remove" data-pos="${pos}" data-id="${id}">✕</button></div>`;
+    }).join('');
+    const rest = ui.state.players.filter(p => !ids.includes(p.id));
+    const add = rest.length ? `<div class="addrow">${rest.map(p => `<button class="pill" data-act="chart-add" data-pos="${pos}" data-id="${p.id}">+ ${esc(p.name)}</button>`).join('')}</div>` : '';
+    const hint = ids.length ? '<p class="note">≡ ziehen zum Sortieren · Name lang drücken zum Umbenennen</p>' : '';
+    return `<div class="chart open">${head}<div class="chartlist" id="chartlist-${pos}">${rows}</div>${hint}${add}</div>`;
+  }
+  function formatSection() {
+    const fe = ui.formatEdit;
+    const list = State.sortedFormats(ui.state).map(f => `<div class="fmt${State.hasBlitz(f) ? '' : ' noblitz'}"><span class="nm">${esc(f.name)}</span><span class="slots">${f.slots.map(label).join(' · ')}${State.hasBlitz(f) ? '' : ' <span class="tag">ohne Blitz</span>'}${f.pairs ? '<br><small>' + Object.keys(f.pairs).map(k => label(f.slots[k]) + '→' + label(f.slots[f.pairs[k]])).join(', ') + '</small>' : ''}</span>
+      <button class="mini" data-act="format-rename" data-id="${f.id}" title="Umbenennen">Aa</button><button class="mini" data-act="format-edit" data-id="${f.id}" title="Positionen ändern">✎</button><button class="mini" data-act="format-remove" data-id="${f.id}" ${ui.state.formats.length <= 1 ? 'disabled' : ''}>✕</button></div>`).join('');
+    if (!fe) return `${list}<button class="wide" data-act="format-new">+ Format</button>`;
+    const off = Core.POSITIONS.filter(p => Core.SIDE[p] === 'off'), def = Core.POSITIONS.filter(p => Core.SIDE[p] === 'def');
+    const canAdd = p => Core.GROUP[p] ? fe.slots.filter(x => x === p).length < Core.groupFree(fe, p).length : !fe.slots.includes(p);
+    const btn = p => canAdd(p) ? `<button class="pill${Core.GROUP[p] ? ' wild' : ''}" data-act="format-slot-add" data-pos="${p}">+ ${label(p)}${Core.GROUP[p] ? ' (beliebig)' : ''}</button>` : '';
+    return `${list}<div class="card">
+      <div class="label">Format bearbeiten</div>
+      <div class="slotline">${fe.slots.length ? fe.slots.map((p, i) => `<button class="pill on" data-act="format-slot-remove" data-i="${i}">${label(p)} ✕</button>`).join('') : '<i>keine Positionen</i>'}</div>
+      <div class="label">Offense</div><div class="addrow">${off.concat('O').map(btn).join('')}</div>
+      <div class="label">Defense</div><div class="addrow">${def.concat('D').map(btn).join('')}</div>
+      <p class="note">OFF / DEF (beliebig): Die App teilt pro Set eine passende Position zu. OFF = ${Core.GROUP.O.join('/')}, DEF = ${Core.GROUP.D.join('/')} (ohne QB und Blitzer), im selben Set nie doppelt.</p>
+      ${pairEditor(fe)}
+      <div class="btnrow"><button class="wide" data-act="format-cancel">Abbrechen</button><button class="wide accent" data-act="format-save">Speichern</button></div>
+    </div>`;
+  }
+  /* who covers whom: one line per defense slot, pills for every offense slot plus "nach Stärke" (no fixed matchup) */
+  function pairEditor(fe) {
+    const defs = fe.slots.map((p, i) => ({ p, i })).filter(x => Core.SIDE[x.p] === 'def');
+    const offs = fe.slots.map((p, i) => ({ p, i })).filter(x => Core.SIDE[x.p] === 'off');
+    if (!defs.length || !offs.length) return '';
+    const pairs = fe.pairs || {};
+    /* repeated wildcard slots get a number: OFF 1, OFF 2 */
+    const nth = x => fe.slots.filter(s => s === x.p).length > 1 ? ' ' + (fe.slots.slice(0, x.i + 1).filter(s => s === x.p).length) : '';
+    const lbl = x => label(x.p) + nth(x);
+    const lines = defs.map(d => {
+      const cur = pairs[d.i];
+      const pill = (o, lbl) => `<button class="pill${String(cur) === String(o) || (o === '' && cur == null) ? ' on' : ''}" data-act="format-pair" data-def="${d.i}" data-off="${o}">${lbl}</button>`;
+      return `<div class="pairline"><span class="pairdef">${lbl(d)} deckt</span>${offs.map(o => pill(o.i, lbl(o))).join('')}${pill('', 'nach Stärke')}</div>`;
+    }).join('');
+    return `<div class="label">Matchups (Coverage)</div>${lines}<p class="note">Ohne feste Matchups vergleicht die App stark gegen stark. Mit Coverage z. B. Cover 2: SC deckt Z.</p>`;
+  }
+  function teamScreen() {
+    const n = present().length;
+    const banner = ui.broken ? `<div class="card warnbox">Die gespeicherten Daten waren nicht lesbar. Die App startet mit den mitgelieferten Daten; eine Kopie der alten Daten liegt im Browser-Speicher unter „setlists.v1.broken“. <button class="link" data-act="broken-dismiss">OK</button></div>` : '';
+    return `${banner}<div class="label">Anwesend heute · ${n} von ${ui.state.players.length}</div>
+      <div class="roster">${ui.state.players.map(chip).join('')}</div>
+      ${playerPanel()}
+      <div class="btnrow"><button class="wide" data-act="player-add">+ Spieler</button></div>
+      <p class="note">Tippen: anwesend / abwesend. Lang drücken: Seite festlegen, umbenennen, löschen.</p>
+      <div class="label">Depth Charts</div>
+      ${Core.POSITIONS.map(chartSection).join('')}
+      <div class="label">Formate</div>
+      ${formatSection()}
+      <div class="label">Daten</div>
+      <div class="btnrow"><button class="wide" data-act="export">Exportieren</button><button class="wide" data-act="import">Importieren</button></div>
+      <div class="btnrow"><button class="wide danger" data-act="reset">Daten zurücksetzen</button></div>
+      <p class="note">Export legt eine Datei ab, die du per AirDrop auf das andere Gerät bringst und dort importierst.</p>`;
+  }
+
+  /* ---------- Sheet screen */
+  function ctx() { return State.ctxOf(ui.state); }
+  function rowsWanted() {
+    const f = format(), n = present().length;
+    const min = Core.minRows(n, f.slots.length);
+    const r = ui.state.settings.rows || Core.suggestedRows(n, f.slots.length);
+    return Math.max(min, Math.min(Core.MAX_ROWS, r));
+  }
+  function regenerate() {
+    const f = format();
+    const g = Core.generate({ format: f, present: present().map(p => p.id), charts: ui.state.charts, rows: rowsWanted(),
+      allowUntried: ui.state.settings.allowUntried, sides: State.ctxOf(ui.state).sides, rng: Core.mulberry32(Date.now() & 0xffffffff) });
+    ui.state.sheet = { formatId: f.id, rows: g.sheet.rows, createdAt: new Date().toISOString(), edited: false, relaxed: g.relaxed };
+    ui.sel = null; ui.picker = null;
+    save();
+  }
+  function ensureSheet() {
+    const f = format();
+    if (!ui.state.sheet || ui.state.sheet.formatId !== f.id || ui.state.sheet.rows.some(r => r.length !== f.slots.length)) regenerate();
+  }
+  /* regenerate, but ask first when the coach has edited the sheet by hand; returns false when they declined */
+  function regenerateAsked() {
+    if (ui.state.sheet && ui.state.sheet.edited && !confirm('Handänderungen verwerfen und neu mischen?')) return false;
+    regenerate();
+    return true;
+  }
+  function shareText() {
+    const f = format();
+    const head = f.name + ' · ' + ui.state.sheet.rows.length + ' Sets';
+    return head + '\n' + ui.state.sheet.rows.map((row, r) => {
+      const real = Core.rowPositions(f, row, ctx());
+      const parts = f.slots.map((pos, i) => ({ side: Core.SIDE[pos], txt: label(real[i]) + ' ' + (row[i] ? nameOf(row[i]) : '—') }));
+      const off = parts.filter(p => p.side === 'off').map(p => p.txt).join(' · ');
+      const def = parts.filter(p => p.side === 'def').map(p => p.txt).join(' · ');
+      return (r + 1) + ': ' + (off && def ? off + ' | ' + def : off || def);
+    }).join('\n');
+  }
+  function createdText(sheet) {
+    const d = new Date(sheet.createdAt);
+    if (isNaN(d)) return '';
+    const pad = n => String(n).padStart(2, '0');
+    const today = new Date();
+    const sameDay = d.toDateString() === today.toDateString();
+    return 'erstellt ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + (sameDay ? '' : ' am ' + pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.') + (sheet.edited ? ' · von Hand geändert' : '');
+  }
+  function pickerHtml() {
+    const { row, slot } = ui.picker, f = format(), c = ctx(), pos = f.slots[slot];
+    const rows = ui.state.sheet.rows;
+    const inRow = new Set(rows[row].filter(Boolean));
+    /* "rested": not in the set before and not in the set after, so the player can line up while the neighbours play */
+    const before = new Set((rows[row - 1] || []).filter(Boolean)), after = new Set((rows[row + 1] || []).filter(Boolean));
+    const rested = id => !before.has(id) && !after.has(id);
+    const order = Core.GROUP[pos]
+      ? present().map(p => p.id).filter(id => !Core.strengthOf(pos, id, c).untried).sort((a, b) => Core.strengthOf(pos, a, c).s - Core.strengthOf(pos, b, c).s)
+      : Core.presentOrder(ui.state.charts[pos], c.present);
+    const charted = order.filter(rested).concat(order.filter(id => !rested(id)));   /* rested first, chart order within each group */
+    const rest = present().map(p => p.id).filter(id => !order.includes(id));
+    const btn = (id, untried) => `<button class="pill${inRow.has(id) ? ' off' : ''}${untried ? ' untried' : ''}${!untried && rested(id) ? ' rested' : ''}" data-act="pick" data-id="${id}" ${inRow.has(id) ? 'disabled' : ''}>${esc(nameOf(id))}${untried ? ' ?' : ''}</button>`;
+    return `<div class="card picker"><div class="label">Set ${row + 1} · ${label(pos)} besetzen</div>
+      <div class="addrow">${charted.map(id => btn(id, false)).join('')}${rest.map(id => btn(id, true)).join('')}</div>
+      <p class="note"><span class="pill rested demo">grün</span> = im Depth Chart und pausiert davor und danach · ohne Rahmen = im Depth Chart · ? = nicht im Depth Chart</p>
+      <div class="btnrow"><button class="wide" data-act="pick-cancel">Abbrechen</button></div></div>`;
+  }
+  function sheetScreen() {
+    ensureSheet();
+    const f = format(), c = ctx(), sheet = ui.state.sheet, n = present().length;
+    const min = Core.minRows(n, f.slots.length);
+    const head = f.slots.map((pos, i) => `<th class="${Core.SIDE[pos]}${i > 0 && Core.SIDE[pos] === 'def' && Core.SIDE[f.slots[i - 1]] === 'off' ? ' split' : ''}">${label(pos)}</th>`).join('');
+    const body = sheet.rows.map((row, r) => {
+      const sc = Core.rowScore(f, row, c);
+      const real = Core.rowPositions(f, row, c);
+      const tds = row.map((id, i) => {
+        const pos = f.slots[i];
+        const tag = Core.GROUP[pos] && id ? `<small class="cpos">${label(real[i])}</small>` : '';
+        const isSel = ui.sel && ui.sel.row === r && ui.sel.slot === i;
+        const untried = id && Core.strengthOf(real[i], id, c).untried;
+        const dup = id && row.indexOf(id) !== row.lastIndexOf(id);
+        const split = i > 0 && Core.SIDE[pos] === 'def' && Core.SIDE[f.slots[i - 1]] === 'off' ? ' split' : '';
+        return `<td class="${Core.SIDE[pos]}${split}"><button class="cell ${Core.SIDE[pos]}${isSel ? ' sel' : ''}${id ? '' : ' empty'}${untried ? ' untried' : ''}${dup ? ' dup' : ''}" data-act="cell" data-row="${r}" data-slot="${i}" data-id="${id || ''}">${tag}${id ? esc(shortName(id)) : '+'}</button></td>`;
+      }).join('');
+      return `<tr class="setrow"><th class="num sethandle" data-act="drag" data-list="sets" data-i="${r}">${r + 1}<span class="grip">≡</span></th><td><button class="mark ${sc.mark}" data-act="mark" data-row="${r}" aria-label="Balance">●</button></td>${tds}</tr>`;
+    }).join('');
+    const reps = Core.repCounts(sheet, c.present);
+    const repLine = present().slice().sort((a, b) => reps.get(b.id) - reps.get(a.id) || a.name.localeCompare(b.name)).map(p => `${esc(p.name)} ${reps.get(p.id)}`).join(' · ');
+    const untried = [];
+    sheet.rows.forEach((row, r) => { const real = Core.rowPositions(f, row, c); row.forEach((id, i) => { if (id && Core.strengthOf(real[i], id, c).untried) untried.push(nameOf(id) + '@' + label(real[i])); }); });
+    const empty = sheet.rows.reduce((a, row) => a + row.filter(id => !id).length, 0);
+    const v = Core.violations(f, sheet, c, { allowUntried: true });
+    const notes = [];
+    if (empty) notes.push(`${empty} ${empty === 1 ? 'Platz' : 'Plätze'} frei · <button class="link" data-act="regen">Neu mischen?</button>`);
+    if (v.some(x => x.rule === 2)) notes.push('Reps ungleich');
+    sheet.rows.forEach((row, r) => {
+      const seen = new Set(), twice = new Set();
+      row.forEach(id => { if (id) { if (seen.has(id)) twice.add(id); seen.add(id); } });
+      if (twice.size) notes.push(`Doppelt in Set ${r + 1}: ` + [...twice].map(id => esc(nameOf(id))).join(', '));
+    });
+    if (v.some(x => x.rule === 1)) notes.push('Nicht alle dabei: ' + v.filter(x => x.rule === 1).map(x => esc(nameOf(x.id))).join(', '));
+    if (untried.length) notes.push('Ausprobiert (nicht im Depth Chart): ' + untried.map(esc).join(', '));
+    const missed = Core.missedBest(f, sheet, c);
+    if (missed.length) notes.push('Nicht auf Top-Position: ' + missed.map(m => esc(nameOf(m.id)) + ' (' + m.best.map(label).join('/') + ')').join(', '));
+    const fmtBtns = State.sortedFormats(ui.state).map(x => `<button class="pill${x.id === f.id ? ' on' : ''}${State.hasBlitz(x) ? '' : ' noblitz'}" data-act="format" data-id="${x.id}" title="${State.hasBlitz(x) ? '' : 'ohne Blitz'}">${esc(x.name)}${State.hasBlitz(x) ? '' : ' ○'}</button>`).join('');
+    return `<div class="sub">${esc(f.name)} · ${n} Spieler · ${sheet.rows.length} Sets</div>
+      <div class="controls">
+        <div class="stepper"><span class="label">Sets</span><button class="mini" data-act="rows" data-dir="-1" ${sheet.rows.length <= min ? 'disabled' : ''}>−</button><span class="val">${sheet.rows.length}</span><button class="mini" data-act="rows" data-dir="1" ${sheet.rows.length >= Core.MAX_ROWS ? 'disabled' : ''}>+</button></div>
+        <div class="fmts">${fmtBtns}</div>
+      </div>
+      <div class="btnrow"><button class="wide accent" data-act="regen">Neu mischen</button><button class="wide" data-act="present">Zeigen</button><button class="wide" data-act="share">Text kopieren</button><button class="wide${ui.state.settings.allowUntried ? ' on' : ''}" data-act="untried" title="Spieler auch auf Positionen setzen, auf denen sie nicht im Depth Chart stehen">Ausprobieren ${ui.state.settings.allowUntried ? 'an' : 'aus'}</button></div>
+      ${ui.picker ? pickerHtml() : ''}
+      <div class="tablewrap"><table class="sheet"><thead><tr><th class="num">#</th><th></th>${head}</tr></thead><tbody id="setlist">${body}</tbody></table></div>
+      <p class="note">Reps: ${repLine}</p>
+      <p class="note">${createdText(sheet)}</p>
+      ${notes.map(x => `<p class="note warn">${x}</p>`).join('')}
+      <p class="note">Tippe zwei Namen zum Tauschen, denselben zweimal zum Leeren, ein leeres Feld zum Besetzen. Set-Nummer ziehen zum Umsortieren. Set 1 hat die stärkste Besetzung.</p>`;
+  }
+
+  /* show mode: only the set list, as large as the screen allows, read-only, for players */
+  function presentScreen() {
+    ensureSheet();
+    const f = format(), rows = ui.state.sheet.rows, cols = f.slots.length;
+    const longest = Math.max(4, ...rows.flat().filter(Boolean).map(id => nameOf(id).length));
+    /* estimated size in em of the whole table: width per column from the longest name, height per set row */
+    const W = (cols * (longest * 0.62 + 0.9) + 1.8).toFixed(2);
+    const H = (rows.length * 1.75 + 3.6).toFixed(2);
+    const split = i => i > 0 && Core.SIDE[f.slots[i]] === 'def' && Core.SIDE[f.slots[i - 1]] === 'off' ? ' split' : '';
+    const head = f.slots.map((pos, i) => `<th class="${Core.SIDE[pos]}${split(i)}">${label(pos)}</th>`).join('');
+    const body = rows.map((row, r) => { const real = Core.rowPositions(f, row, ctx()); return `<tr><th class="pnum">${r + 1}</th>${row.map((id, i) =>
+      `<td class="${Core.SIDE[f.slots[i]]}${split(i)}"><span class="pcell ${Core.SIDE[f.slots[i]]}${id ? '' : ' empty'}">${Core.GROUP[f.slots[i]] && id ? `<small class="cpos">${label(real[i])}</small>` : ''}${id ? esc(nameOf(id)) : '–'}</span></td>`).join('')}</tr>`; }).join('');
+    return `<div class="present" style="--rows:${rows.length};--cols:${cols};--fw:${W};--fh:${H}">
+      <button class="presentclose" data-act="present-close" aria-label="Schließen">×</button>
+      <div class="pinner"><div class="ptitle">${esc(f.name)}</div>
+      <table class="ptable"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table></div>
+    </div>`;
+  }
+
+  /* measure the drawn table at a base size, then scale the text so title + table fill the screen */
+  function fitPresent() {
+    const box = app.querySelector && app.querySelector('.present');
+    const inner = box && box.querySelector('.pinner');
+    if (!inner || !inner.getBoundingClientRect) return;
+    const cs = getComputedStyle(box);
+    const availW = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const availH = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const base = 20;
+    box.style.fontSize = base + 'px';
+    const r = inner.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    box.style.fontSize = (base * Math.min(availW / r.width, availH / r.height) * 0.97).toFixed(1) + 'px';
+  }
+  if (window.addEventListener) {
+    const refit = () => { if (ui.present) fitPresent(); };
+    window.addEventListener('resize', refit);
+    window.addEventListener('orientationchange', () => setTimeout(refit, 200));
+  }
+
+  function render() {
+    if (ui.present && ui.screen === 'sheet') { app.innerHTML = presentScreen(); fitPresent(); return; }
+    const tab = s => `<button class="tab${ui.screen === s ? ' on' : ''}" data-act="go" data-screen="${s}">${s === 'team' ? 'Team' : 'Sheet'}</button>`;
+    app.innerHTML = `<header><h1>Sets</h1><div class="tabs">${tab('team')}${tab('sheet')}</div></header>` + (ui.screen === 'team' ? teamScreen() : sheetScreen());
+  }
+
+  /* ---------- actions */
+  const actions = {
+    go(d) { ui.screen = d.screen; ui.sel = null; ui.picker = null; },
+    toggle(d) { const p = player(d.id); State.setPresent(ui.state, d.id, !p.present); save(); },
+    'player-add'() {
+      const n = prompt('Name des Spielers'); if (!n || !n.trim()) return;
+      try { State.addPlayer(ui.state, n); save(); } catch (e) { alert(e.message); }
+    },
+    'broken-dismiss'() { ui.broken = false; },
+    'player-panel'(d) { ui.panel = ui.panel === d.id ? null : d.id; },
+    'player-panel-close'() { ui.panel = null; },
+    'player-side'(d) { State.setSide(ui.state, ui.panel, d.side); save(); },
+    'player-remove-id'(d) {
+      const p = player(d.id); if (!p) return;
+      if (confirm(p.name + ' löschen? Er/sie verschwindet aus allen Depth Charts.')) { State.removePlayer(ui.state, p.id); ui.panel = null; save(); }
+    },
+    'chart-open'(d) { ui.open[d.pos] = !ui.open[d.pos]; },
+    'chart-move'(d) { State.moveInChart(ui.state, d.pos, d.id, Number(d.dir)); save(); },
+    present() {
+      ui.present = true; ui.sel = null; ui.picker = null;
+      const el = document.documentElement;   /* real fullscreen where the browser allows it (iPad, desktop); iPhone keeps the bars */
+      if (el && el.requestFullscreen) { try { const p = el.requestFullscreen(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* ignore */ } }
+    },
+    'present-close'() {
+      ui.present = false;
+      if (document.fullscreenElement && document.exitFullscreen) { try { const p = document.exitFullscreen(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* ignore */ } }
+    },
+    'set-reorder'(d) {
+      const rows = ui.state.sheet.rows, from = Number(d.from), to = Number(d.to);
+      if (from === to || from < 0 || to < 0 || from >= rows.length || to >= rows.length) return;
+      const [row] = rows.splice(from, 1); rows.splice(to, 0, row);
+      ui.sel = null; ui.picker = null; ui.state.sheet.edited = true; save();
+    },
+    'chart-reorder'(d) { State.reorderChart(ui.state, d.pos, Number(d.from), Number(d.to)); save(); },
+    'player-rename-id'(d) {
+      const p = player(d.id); if (!p) return;
+      const m = prompt('Neuer Name für ' + p.name, p.name); if (!m || !m.trim()) return;
+      try { State.renamePlayer(ui.state, d.id, m); save(); } catch (e) { alert(e.message); }
+    },
+    'format-rename'(d) {
+      const f = ui.state.formats.find(x => x.id === d.id); if (!f) return;
+      const n = prompt('Neuer Name für ' + f.name, f.name); if (n && n.trim()) { f.name = n.trim(); save(); }
+    },
+    'chart-remove'(d) { State.removeFromChart(ui.state, d.pos, d.id); save(); },
+    'chart-add'(d) { State.addToChart(ui.state, d.pos, d.id); save(); },
+    'format-new'() { ui.formatEdit = { id: null, name: '', slots: [], pairs: {} }; },
+    'format-edit'(d) { const f = ui.state.formats.find(x => x.id === d.id); ui.formatEdit = { id: f.id, name: f.name, slots: f.slots.slice(), pairs: Object.assign({}, f.pairs || {}) }; },
+    'format-slot-add'(d) {
+      const fe = ui.formatEdit, g = Core.GROUP[d.pos];
+      const ok = g ? fe.slots.filter(x => x === d.pos).length < Core.groupFree(fe, d.pos).length : !fe.slots.includes(d.pos);
+      if (fe.slots.length < 10 && ok) fe.slots.push(d.pos);
+    },
+    'format-slot-remove'(d) {
+      const fe = ui.formatEdit, i = Number(d.i);
+      fe.slots.splice(i, 1);
+      /* matchups refer to slot indices: drop the removed one, shift the rest */
+      const np = {};
+      for (const k of Object.keys(fe.pairs || {})) {
+        const dd = Number(k), oo = fe.pairs[k];
+        if (dd === i || oo === i) continue;
+        np[dd > i ? dd - 1 : dd] = oo > i ? oo - 1 : oo;
+      }
+      fe.pairs = np;
+    },
+    'format-pair'(d) {
+      const fe = ui.formatEdit; fe.pairs = fe.pairs || {};
+      if (d.off === '') delete fe.pairs[d.def]; else fe.pairs[d.def] = Number(d.off);
+    },
+    'format-cancel'() { ui.formatEdit = null; },
+    'format-save'() {
+      const fe = ui.formatEdit;
+      if (fe.slots.length < 2) { alert('Mindestens 2 Positionen'); return; }
+      const name = prompt('Name des Formats', fe.name || fe.slots.map(label).join('-')); if (!name) return;
+      const sheet = ui.state.sheet;
+      const touchesSheet = !!(fe.id && sheet && sheet.formatId === fe.id);
+      const oldF = fe.id ? ui.state.formats.find(f => f.id === fe.id) : null;
+      const oldSlots = oldF ? JSON.stringify(oldF.slots) : null;
+      const pairs = Object.keys(fe.pairs || {}).length ? fe.pairs : undefined;
+      if (touchesSheet && sheet.edited && !confirm('Das aktuelle Sheet hat Handänderungen. Format trotzdem ändern und Sheet neu mischen?')) return;
+      try {
+        if (fe.id) State.updateFormat(ui.state, fe.id, name, fe.slots, pairs); else State.addFormat(ui.state, name, fe.slots, pairs);
+      } catch (e) { alert(e.message); return; }
+      if (touchesSheet && oldSlots !== JSON.stringify(ui.state.formats.find(f => f.id === fe.id).slots)) ui.state.sheet = null;
+      ui.formatEdit = null; save();
+    },
+    'format-remove'(d) { if (confirm('Format löschen?')) { State.removeFormat(ui.state, d.id); save(); } },
+    export() {
+      const text = State.exportJSON(ui.state);
+      const d = new Date(), pad = n => String(n).padStart(2, '0');
+      const name = 'setlists-' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + '.json';
+      /* iOS: the share sheet reaches AirDrop and Files directly; a blob download is the fallback */
+      if (typeof File === 'function' && navigator.share && navigator.canShare) {
+        try {
+          const file = new File([text], name, { type: 'application/json' });
+          if (navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'Set Lists' }).catch(() => {}); return; }
+        } catch (e) { /* fall through to the download */ }
+      }
+      const a = document.createElement ? document.createElement('a') : null;
+      if (!a) return;
+      a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      a.download = name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    },
+    import() {
+      if (!document.createElement) return;
+      /* iOS Safari opens the picker reliably only for an input that is part of the page */
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json,.json';
+      inp.style.position = 'fixed'; inp.style.left = '-1000px'; inp.style.opacity = '0';
+      document.body.appendChild(inp);
+      const detach = () => { try { document.body.removeChild(inp); } catch (e) { /* already gone */ } };
+      inp.addEventListener('cancel', detach);
+      inp.addEventListener('change', () => {
+        const f = inp.files && inp.files[0];
+        detach();
+        if (!f) return;
+        f.text().then(t => { applyImport(t); render(); }).catch(() => alert('Ungültige Datei'));
+      });
+      inp.click();
+    },
+    /* sheet */
+    cell(d) {
+      const row = Number(d.row), slot = Number(d.slot), rows = ui.state.sheet.rows;
+      ui.picker = null;
+      if (!ui.sel) {
+        if (!d.id) { ui.picker = { row, slot }; return; }
+        ui.sel = { row, slot }; return;
+      }
+      const s = ui.sel; ui.sel = null;
+      if (s.row === row && s.slot === slot) { rows[row][slot] = null; }
+      else { const a = rows[s.row][s.slot]; rows[s.row][s.slot] = rows[row][slot]; rows[row][slot] = a; }
+      ui.state.sheet.edited = true; save();
+    },
+    pick(d) { const { row, slot } = ui.picker; ui.state.sheet.rows[row][slot] = d.id; ui.picker = null; ui.state.sheet.edited = true; save(); },
+    'pick-cancel'() { ui.picker = null; },
+    mark(d) {
+      const f = format(), sc = Core.rowScore(f, ui.state.sheet.rows[Number(d.row)], ctx());
+      if (!sc.worst) { alert('Set ' + (Number(d.row) + 1) + ': unvollständig'); return; }
+      const w = sc.worst, one = e => `${label(e.pos)} ${nameOf(e.id)} (${Math.round(e.s * 10) / 10})`;
+      const other = w.b.mean != null ? `Schnitt der anderen Seite (${Math.round(w.b.mean * 10) / 10})` : one(w.b);
+      alert(`Set ${Number(d.row) + 1}: ${one(w.a)} gegen ${other} · Abstand ${sc.score}`);
+    },
+    regen() { regenerateAsked(); },
+    share() {
+      const text = shareText();
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => alert('Kopiert')).catch(() => prompt('Kopieren:', text));
+      else prompt('Kopieren:', text);
+    },
+    untried() { ui.state.settings.allowUntried = !ui.state.settings.allowUntried; save(); },
+    rows(d) {
+      const f = format(), n = present().length;
+      const min = Core.minRows(n, f.slots.length);
+      const want = Math.max(min, Math.min(Core.MAX_ROWS, ui.state.sheet.rows.length + Number(d.dir)));
+      if (want === ui.state.sheet.rows.length) return;
+      const old = ui.state.settings.rows;
+      ui.state.settings.rows = want;
+      if (!regenerateAsked()) ui.state.settings.rows = old;
+      save();
+    },
+    format(d) {
+      if (d.id === ui.state.settings.formatId) return;
+      /* every format keeps its own sheet; switching shows it, and only a format without one gets generated */
+      ui.state.settings.formatId = d.id; ui.state.settings.rows = null;
+      ui.sel = null; ui.picker = null;
+      save();
+    },
+    reset() { if (confirm('Alle Daten löschen und die mitgelieferten Daten neu laden?')) { State.reset(storage); ui.state = State.load(storage, (typeof SEED !== "undefined" ? SEED : null)); ui.sel = null; ui.picker = null; } },
+  };
+
+  /* parse first, then ask, then replace: a bad file never touches the current state */
+  function applyImport(text) {
+    let next;
+    try { next = State.importJSON(text); } catch (e) { alert('Ungültige Datei'); return false; }
+    if (!confirm('Alle Daten durch die Datei ersetzen (' + next.players.length + ' Spieler)?')) return false;
+    ui.state = next; ui.sel = null; ui.picker = null; ui.formatEdit = null; save();
+    return true;
+  }
+
+  /* touch handling: drag a ≡ handle to reorder (depth chart rows or sets), hold a name for its menu */
+  const touch = { drag: null, hold: null, swallowClick: false };
+  function rowsOf(drag) {
+    return drag.list === 'sets' ? [...app.querySelectorAll('[id="setlist"] tr')] : [...app.querySelectorAll(`[id="chartlist-${drag.pos}"] .chartrow`)];
+  }
+  function indexAtY(drag, y) {
+    const rows = rowsOf(drag);
+    for (let i = 0; i < rows.length; i++) { const r = rows[i].getBoundingClientRect(); if (y < r.top + r.height / 2) return i; }
+    return rows.length - 1;
+  }
+  app.addEventListener('pointerdown', e => {
+    const el = e.target.closest && e.target.closest('[data-act="drag"],[data-hold]');
+    if (!el) return;
+    const d = el.dataset;
+    if (d.act === 'drag') {
+      e.preventDefault();
+      touch.drag = { list: d.list, pos: d.pos, from: Number(d.i), to: Number(d.i), row: el.closest(d.list === 'sets' ? 'tr' : '.chartrow') };
+      touch.drag.row.classList.add('dragging');
+      if (el.setPointerCapture) { try { el.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } }
+    } else {
+      const kind = d.hold;
+      touch.hold = { id: d.id, x: e.clientX, y: e.clientY, timer: setTimeout(() => {
+        touch.hold = null; touch.swallowClick = true;
+        if (kind === 'panel') actions['player-panel']({ id: d.id }); else actions['player-rename-id']({ id: d.id });
+        render();
+      }, 500) };
+    }
+  });
+  app.addEventListener('pointermove', e => {
+    if (touch.drag) {
+      const to = indexAtY(touch.drag, e.clientY);
+      if (to !== touch.drag.to) {
+        touch.drag.to = to;
+        rowsOf(touch.drag).forEach((r, i) => r.classList.toggle('over', i === to && i !== touch.drag.from));
+      }
+    } else if (touch.hold && Math.hypot(e.clientX - touch.hold.x, e.clientY - touch.hold.y) > 10) {
+      clearTimeout(touch.hold.timer); touch.hold = null;
+    }
+  });
+  const endTouch = () => {
+    if (touch.drag) {
+      const { list, pos, from, to } = touch.drag; touch.drag = null; touch.swallowClick = true;
+      if (from !== to) actions[list === 'sets' ? 'set-reorder' : 'chart-reorder']({ pos, from, to });
+      render();
+    }
+    if (touch.hold) { clearTimeout(touch.hold.timer); touch.hold = null; }
+  };
+  app.addEventListener('pointerup', endTouch);
+  app.addEventListener('pointercancel', endTouch);
+
+  app.addEventListener('click', e => {
+    if (touch.swallowClick) { touch.swallowClick = false; return; }
+    const el = e.target.closest('[data-act]');
+    if (!el) return;
+    const d = el.dataset;
+    const fn = actions[d.act];
+    if (!fn) return;
+    fn(d);
+    render();
+  });
+
+  window.SetListsUI = { render, go: s => { ui.screen = s; render(); }, get state() { return ui.state; }, ui, actions, applyImport };
+  try {
+    render();
+    save();   /* persist the seed on first run, so a reset later has something to clear and reloads stay stable */
+  } catch (e) {
+    /* a saved state that slipped past validation must not leave a blank page: keep a copy, start over from the seed */
+    try { storage.setItem(State.KEY + '.broken', storage.getItem(State.KEY)); } catch (x) { /* ignore */ }
+    State.reset(storage);
+    ui.state = State.load(storage, (typeof SEED !== "undefined" ? SEED : null));
+    render(); save();
+  }
+})();
+
+</script>
+<script>
+/* Offline: register the shared worker (HTTPS or localhost only) and keep this page ready for use without signal. */
+(function(){
+  if(!('serviceWorker' in navigator)||!(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))return;
+  navigator.serviceWorker.register('5v5-sw.js').then(function(){return navigator.serviceWorker.ready;}).then(function(reg){
+    if(reg.active)reg.active.postMessage({type:'precache',urls:[location.href.split('#')[0]]});
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>
